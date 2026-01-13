@@ -5,7 +5,7 @@ load_dotenv()
 
 URL = "https://danbooru.donmai.us/posts.json"
 SEARCH_TAGS = "izumi_konata hiiragi_kagami rating:s"
-LIMIT = 15
+LIMIT = 50
 
 params = {
     "tags": SEARCH_TAGS,

@@ -89,18 +89,21 @@ async def on_message(message):
     if message.author.bot:
         return
     
+    if message.channel.name != "general":
+        return
+    
     conversation_context.append(f"{message.author.display_name}: {message.content}")
 
-    if random.random() < 0.3:
-        with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
-            luckystarlines = f.readlines()
-            randomline = random.choice(luckystarlines).strip()
-            await message.channel.send(randomline)
-    elif random.random() < 0.3:
+    if random.random() < 0.6:
         async with message.channel.typing():
             llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
             conversation_context.append(f"Aigis: {llm_data}")
             await message.channel.send(llm_data)
+    elif random.random() < 0.3:
+        with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
+            luckystarlines = f.readlines()
+            randomline = random.choice(luckystarlines).strip()
+            await message.channel.send(randomline)
     elif random.random() < 0.1:
         await convert_images_to_avif(message)
     elif random.random() < 0.6:
