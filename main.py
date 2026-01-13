@@ -1,4 +1,4 @@
-import embed, downloadvideo, gitimport, llm
+import embed, downloadvideo, gitimport, llm, getkonataxkagami
 import os, io, asyncio, functools, aiohttp, random
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
@@ -73,6 +73,11 @@ async def sync_tree(ctx):
 async def hi(ctx):
     await ctx.send("Hi!!")
 
+@bot.command()
+async def k(ctx):
+    image_url = getkonataxkagami.get_image_url()
+    if image_url: await ctx.send(image_url)
+
 ### ====== Bot ======
 @bot.event
 async def on_ready():
@@ -98,9 +103,16 @@ async def on_message(message):
             llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
             conversation_context.append(f"Aigis: {llm_data}")
             await message.channel.send(llm_data)
+        return
 
     if random.random() < 0.1:
         await convert_images_to_avif(message)
+        return
+    
+    if random.random() < 0.4:
+        image_url = getkonataxkagami.get_image_url()
+        if image_url: await message.channel.send(image_url)
+        return
 
     await bot.process_commands(message)  # Keep commands working
 
