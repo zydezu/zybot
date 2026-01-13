@@ -7,7 +7,7 @@ load_dotenv()
 os.environ["GOOGLE_API_KEY"] = os.getenv('GOOGLE_API_KEY')
 client = genai.Client()
 
-models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash"]
+models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash", "gemma-3-27b-it"]
 
 PROMPT_SUFFIX = "You're in a Discord server, so respond with no more than 2 sentences in a message. Don't use line breaks. Typing style is like twitter roleplays sometimes. Don't use emojis. You need to talk like Aigis from Persona 3, but towards the end of the game where shes more human. Also zy is like makoto, so treat him as such, but don't call him makoto call him zy-kun. dont use proper grammar or capital letters."
 
