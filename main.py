@@ -96,23 +96,16 @@ async def on_message(message):
             luckystarlines = f.readlines()
             randomline = random.choice(luckystarlines).strip()
             await message.channel.send(randomline)
-        return
-    
-    if random.random() < 0.3:
+    elif random.random() < 0.3:
         async with message.channel.typing():
             llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
             conversation_context.append(f"Aigis: {llm_data}")
             await message.channel.send(llm_data)
-        return
-
-    if random.random() < 0.1:
+    elif random.random() < 0.1:
         await convert_images_to_avif(message)
-        return
-    
-    if random.random() < 0.6:
+    elif random.random() < 0.6:
         image_url = getkonataxkagami.get_image_url()
         if image_url: await message.channel.send(image_url)
-        return
 
     await bot.process_commands(message)  # Keep commands working
 
