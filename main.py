@@ -1,5 +1,5 @@
 import embed, downloadvideo, gitimport
-import os, io, asyncio, functools, aiohttp
+import os, io, asyncio, functools, aiohttp, random
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
 from PIL import Image
@@ -15,6 +15,8 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 channel_ids = {
     "youtube-logs": 1391985272589123665
 }
+
+LUCKYSTARLINESPATH = "luckystar/lines.txt"
 
 # ---------------
 # BOT SETUP
@@ -80,8 +82,16 @@ async def on_message(message):
     # Prevent bot from responding to itself
     if message.author.bot:
         return
+    
+    if random.random() < 0.2:
+        with open(LUCKYSTARLINESPATH, "r") as f:
+            luckystarlines = f.readlines()
+            randomline = random.choice(luckystarlines).strip()
+            await message.channel.send(randomline)
+        return
 
-    await convert_images_to_avif(message)
+    if random.random() < 0.1:
+        await convert_images_to_avif(message)
 
     await bot.process_commands(message)  # Keep commands working
 
