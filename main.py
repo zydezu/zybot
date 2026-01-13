@@ -84,7 +84,7 @@ async def on_message(message):
     if message.author.bot:
         return
     
-    conversation_context.append(message.content)
+    conversation_context.append(f"{message.author}: {message.content}")
 
     if random.random() < 0.2:
         with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:

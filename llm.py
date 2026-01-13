@@ -13,6 +13,7 @@ PROMPT_SUFFIX = "You're in a Discord server, so respond with no more than 2 sent
 
 def generate_content_llm(message, author, conversation_context):
     prompt = f"{PROMPT_SUFFIX}\n{author}'s message: {message}. The conversation so far: {"\n".join(conversation_context[:10])}"
+    print(prompt)
 
     for model in models:
         try:
