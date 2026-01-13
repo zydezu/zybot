@@ -84,7 +84,7 @@ async def on_message(message):
         return
     
     if random.random() < 0.2:
-        with open(LUCKYSTARLINESPATH, "r") as f:
+        with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
             luckystarlines = f.readlines()
             randomline = random.choice(luckystarlines).strip()
             await message.channel.send(randomline)
