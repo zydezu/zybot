@@ -84,7 +84,7 @@ async def on_message(message):
     if message.author.bot:
         return
     
-    conversation_context.append(f"{message.author}: {message.content}")
+    conversation_context.append(f"{message.author.display_name}: {message.content}")
 
     if random.random() < 0.2:
         with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
@@ -95,7 +95,7 @@ async def on_message(message):
     
     if random.random() < 0.8:
         async with message.channel.typing():
-            llm_data = llm.generate_content_llm(message.content, message.author, conversation_context)
+            llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
             conversation_context.append(f"Aigis: {llm_data}")
             await message.channel.send(llm_data)
 
