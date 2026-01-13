@@ -17,6 +17,7 @@ channel_ids = {
 }
 
 LUCKYSTARLINESPATH = "luckystar/lines.txt"
+conversation_context = []
 
 # ---------------
 # BOT SETUP
@@ -83,6 +84,8 @@ async def on_message(message):
     if message.author.bot:
         return
     
+    conversation_context.append(message.content)
+
     if random.random() < 0.2:
         with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
             luckystarlines = f.readlines()
@@ -92,7 +95,7 @@ async def on_message(message):
     
     if random.random() < 0.7:
         async with message.channel.typing():
-            await message.channel.send(llm.generate_content_llm(message.content, message.author))
+            await message.channel.send(llm.generate_content_llm(message.content, message.author, conversation_context))
 
     if random.random() < 0.1:
         await convert_images_to_avif(message)
