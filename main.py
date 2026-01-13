@@ -89,11 +89,12 @@ async def on_message(message):
             randomline = random.choice(luckystarlines).strip()
             await message.channel.send(randomline)
         return
+    
+    if random.random() < 0.7:
+        await message.channel.send(llm.generate_content_llm(message.content))
 
     if random.random() < 0.1:
         await convert_images_to_avif(message)
-    elif random.random() < 0.3:
-        await message.channel.send(llm.generate_content_llm(message.content))
 
     await bot.process_commands(message)  # Keep commands working
 
