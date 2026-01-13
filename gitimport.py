@@ -7,7 +7,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler("umkl_server.log"),
+        logging.FileHandler("zybot.log"),
         logging.StreamHandler()
     ]
 )

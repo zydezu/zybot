@@ -81,38 +81,61 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # Check if there is an attachment
-    if message.attachments:
-        for attachment in message.attachments:
-            if any(attachment.filename.lower().endswith(ext) for ext in ["png", "jpg", "jpeg", "bmp", "webp"]):
-                await convert_to_avif(message, attachment)
+    await convert_images_to_avif(message)
 
     await bot.process_commands(message)  # Keep commands working
 
-async def convert_to_avif(message, attachment):
-    print("Converting...")
+async def convert_images_to_avif(message):
+    if not message.attachments:
+        return
 
-    print("Attachment URL:", attachment.url)
+    original_text = message.content or ""
 
-    headers = {"User-Agent": "Mozilla/5.0"}
-    async with aiohttp.ClientSession(headers=headers) as session:
-        async with session.get(attachment.url) as resp:
-            print("HTTP status:", resp.status)
-            if resp.status != 200:
-                print("Failed to download the image.")
-                return
-            data = await resp.read()
+    print(f"Converting images in message to avif")
 
-    # Open image with Pillow
-    img = Image.open(io.BytesIO(data))
+    avif_files = []
 
-    # Convert to AVIF in memory with lowest quality
-    avif_buffer = io.BytesIO()
-    img.save(avif_buffer, format="AVIF", quality=0)
-    avif_buffer.seek(0)
+    for attachment in message.attachments:
+        # Only process image files
+        if not any(attachment.filename.lower().endswith(ext) for ext in ["png", "jpg", "jpeg", "bmp", "webp", "avif"]):
+            continue
 
-    # Send back
-    await message.channel.send(file=discord.File(fp=avif_buffer, filename=f"{attachment.filename}.avif"))
+        # Download image
+        headers = {"User-Agent": "Mozilla/5.0"}
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(attachment.url) as resp:
+                if resp.status != 200:
+                    print("Failed to download the image.")
+                    return
+                data = await resp.read()
+
+        os.makedirs("images", exist_ok=True)
+        local_path = os.path.join("images", attachment.filename)
+        with open(local_path, "wb") as f:
+            f.write(data)
+
+        # Convert to avif
+        img = Image.open(io.BytesIO(data))
+        avif_buffer = io.BytesIO()
+        img.save(avif_buffer, format="AVIF", quality=0)
+        avif_buffer.seek(0)
+
+        # Send new image
+        filename_no_ext = os.path.splitext(attachment.filename)[0]
+        avif_filename = f"{filename_no_ext}.avif"
+        avif_files.append(discord.File(fp=avif_buffer, filename=avif_filename))
+
+    if avif_files:
+        await message.channel.send(content=original_text, files=avif_files)
+        
+        # Delete original message
+        try:
+            await message.delete()
+            print("Original message deleted")
+        except discord.Forbidden:
+            print("Missing permissions to delete the original message")
+        except discord.NotFound:
+            print("Original message already deleted")
 
 ### ====== Start bot ======
 def main():
