@@ -91,7 +91,7 @@ async def on_message(message):
         return
     
     if random.random() < 0.7:
-        await message.channel.send(llm.generate_content_llm(message.content))
+        await message.channel.send(llm.generate_content_llm(message.content, message.author))
 
     if random.random() < 0.1:
         await convert_images_to_avif(message)
