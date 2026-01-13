@@ -91,14 +91,14 @@ async def on_message(message):
     
     conversation_context.append(f"{message.author.display_name}: {message.content}")
 
-    if random.random() < 0.2:
+    if random.random() < 0.3:
         with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
             luckystarlines = f.readlines()
             randomline = random.choice(luckystarlines).strip()
             await message.channel.send(randomline)
         return
     
-    if random.random() < 0.8:
+    if random.random() < 0.3:
         async with message.channel.typing():
             llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
             conversation_context.append(f"Aigis: {llm_data}")
@@ -109,7 +109,7 @@ async def on_message(message):
         await convert_images_to_avif(message)
         return
     
-    if random.random() < 0.4:
+    if random.random() < 0.6:
         image_url = getkonataxkagami.get_image_url()
         if image_url: await message.channel.send(image_url)
         return

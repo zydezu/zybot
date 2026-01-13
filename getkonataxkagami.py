@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 URL = "https://danbooru.donmai.us/posts.json"
-SEARCH_TAGS = "izumi_konata hiiragi_kagami"
+SEARCH_TAGS = "izumi_konata hiiragi_kagami rating:s"
 LIMIT = 15
 
 params = {
