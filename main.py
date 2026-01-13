@@ -95,7 +95,9 @@ async def on_message(message):
     
     if random.random() < 0.8:
         async with message.channel.typing():
-            await message.channel.send(llm.generate_content_llm(message.content, message.author, conversation_context))
+            llm_data = llm.generate_content_llm(message.content, message.author, conversation_context)
+            conversation_context.append(f"Aigis: {llm_data}")
+            await message.channel.send(llm_data)
 
     if random.random() < 0.1:
         await convert_images_to_avif(message)
