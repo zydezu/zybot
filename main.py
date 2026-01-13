@@ -93,7 +93,7 @@ async def on_message(message):
             await message.channel.send(randomline)
         return
     
-    if random.random() < 0.7:
+    if random.random() < 0.8:
         async with message.channel.typing():
             await message.channel.send(llm.generate_content_llm(message.content, message.author, conversation_context))
 
