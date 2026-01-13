@@ -106,7 +106,8 @@ async def on_message(message):
             await message.channel.send(randomline)
     elif random.random() < 0.1:
         await convert_images_to_avif(message)
-    elif random.random() < 0.6:
+    
+    if random.random() < 0.2:
         image_url = getkonataxkagami.get_image_url()
         if image_url: await message.channel.send(image_url)
 
