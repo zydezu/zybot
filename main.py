@@ -1,4 +1,4 @@
-import embed, downloadvideo, gitimport
+import embed, downloadvideo, gitimport, llm
 import os, io, asyncio, functools, aiohttp, random
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
@@ -92,6 +92,8 @@ async def on_message(message):
 
     if random.random() < 0.1:
         await convert_images_to_avif(message)
+    elif random.random() < 0.3:
+        await message.channel.send(llm.generate_content_llm(message.content))
 
     await bot.process_commands(message)  # Keep commands working
 
