@@ -131,7 +131,7 @@ async def on_message(message):
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
                 await message.channel.send(llm_data)
         elif random.random() < 0.3:
-            print("Sending a random Lucky Star image from danbooru")
+            print("Sending a random Lucky Star quote")
             with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
                 luckystarlines = f.readlines()
                 randomline = random.choice(luckystarlines).strip()
@@ -140,6 +140,7 @@ async def on_message(message):
             await convert_images_to_avif(message)
 
         if random.random() < 0.2:
+            print("Sending a random Lucky Star image from danbooru")
             image_url = getkonataxkagami.get_image_url()
             if image_url: await message.channel.send(image_url)
     else:
