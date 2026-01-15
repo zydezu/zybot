@@ -1,5 +1,5 @@
-import embed, downloadvideo, gitimport, llm, getkonataxkagami
-import os, io, asyncio, functools, aiohttp, random
+import embed, downloadvideo, gitimport, llm, getkonataxkagami, artcounting
+import os, io, asyncio, functools, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
 from PIL import Image
@@ -12,12 +12,24 @@ os.system("") # Needed for message to have colour in the terminal
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-channel_ids = {
-    "youtube-logs": 1391985272589123665
-}
+
+ZYBOTID = 1460308838879072266
 
 LUCKYSTARLINESPATH = "luckystar/lines.txt"
 conversation_context = []
+
+EMBED_LINKS = [
+    { "x.com", "fixupx.com" },
+    { "reddit.com", "rxddit.com" },
+    { "instagram.com", "eeinstagram.com" },
+    { "pixiv.com", "phixiv.com" }
+]
+
+CHANNELS_TO_COUNT = {
+    "art": "art",
+    "yaoi": "art",
+    "yuri": "yuri"
+}
 
 # ---------------
 # BOT SETUP
@@ -89,28 +101,85 @@ async def on_message(message):
     if message.author.bot:
         return
     
-    if message.channel.name != "general":
-        return
-    
-    conversation_context.append(f"{message.author.display_name}: {message.content}")
+    print(f"Processing {message.content}")
 
-    if not (message.reference and message.reference.message_id) and random.random() < 0.6:
+    category = CHANNELS_TO_COUNT.get(message.channel.name)
+    if category:
+        url_pattern = re.compile(r"^https?://\S+$")
+        content = message.content.strip()
+        
+        if url_pattern.fullmatch(content):
+            if "discord.com" not in content and "tenor.com" not in content:
+                artcounting.increment_user_artcount(message.author.id, category)
+
+    if message.channel.name == "general":
+        conversation_context.append(f"{message.author.display_name}: {message.content}")
+
+        if not (message.reference and message.reference.message_id) and random.random() < 0.35:
+            async with message.channel.typing():
+                llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
+                await message.channel.send(llm_data)
+        elif random.random() < 0.3:
+            print("Sending a random Lucky Star image from danbooru")
+            with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
+                luckystarlines = f.readlines()
+                randomline = random.choice(luckystarlines).strip()
+                await message.channel.send(randomline)
+        elif random.random() < 0.4:
+            await convert_images_to_avif(message)
+
+        if random.random() < 0.2:
+            image_url = getkonataxkagami.get_image_url()
+            if image_url: await message.channel.send(image_url)
+    else:
+        pass
+
+    if any(user.id == ZYBOTID for user in message.mentions):
         async with message.channel.typing():
-            llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
+            llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
             await message.channel.send(llm_data)
-    elif random.random() < 0.3:
-        with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
-            luckystarlines = f.readlines()
-            randomline = random.choice(luckystarlines).strip()
-            await message.channel.send(randomline)
-    elif random.random() < 0.4:
-        await convert_images_to_avif(message)
-    
-    if random.random() < 0.2:
-        image_url = getkonataxkagami.get_image_url()
-        if image_url: await message.channel.send(image_url)
+    elif message.reference and message.reference.message_id:
+        replied_message = message.reference.resolved
+        if replied_message and replied_message.author.id == ZYBOTID:
+            async with message.channel.typing():
+                llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
+                await message.channel.send(llm_data)
+
+    if message.content:
+        new_link, converted = convert_links_to_embed(message.content)
+        if converted:
+            await message.channel.send(content=new_link)
+            try:
+                await message.delete()
+                print("Original message deleted")
+            except discord.Forbidden:
+                print("Missing permissions to delete the original message")
+            except discord.NotFound:
+                print("Original message already deleted")
 
     await bot.process_commands(message)  # Keep commands working
+
+def convert_links_to_embed(message):
+    print("Checking links to convert...")
+    new_message = message
+    converted = False
+
+    for original, embed in EMBED_LINKS:
+        pattern = re.compile(
+            rf"(https?://)?(www\.)?({re.escape(original)})",
+            flags=re.IGNORECASE
+        )
+
+        def replace_domain(match):
+            scheme = match.group(1) or "" 
+            www = match.group(2) or "" 
+            return f"{scheme}{embed}"
+
+        new_message, num_subs = pattern.subn(replace_domain, new_message)
+        if num_subs > 0:
+            converted = True
+
+    return new_message, converted
 
 async def convert_images_to_avif(message):
     if not message.attachments:
@@ -155,7 +224,6 @@ async def convert_images_to_avif(message):
     if avif_files:
         await message.channel.send(content=original_text, files=avif_files)
         
-        # Delete original message
         try:
             await message.delete()
             print("Original message deleted")
