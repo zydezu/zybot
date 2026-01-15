@@ -151,7 +151,7 @@ async def on_message(message):
     if message.content:
         new_link, converted = convert_links_to_embed(message.content)
         if converted:
-            await message.channel.send(content=new_link)
+            await message.reply(new_link, mention_author=False)
             return
 
     await bot.process_commands(message)  # Keep commands working
