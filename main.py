@@ -2,7 +2,7 @@ import embed, downloadvideo, gitimport, llm, getkonataxkagami, artcounting
 import os, io, asyncio, functools, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlsplit, urlunsplit
 from PIL import Image
 from discord.ext import commands
 from discord import app_commands
@@ -25,6 +25,8 @@ EMBED_LINKS = [
     { "instagram.com", "eeinstagram.com" },
     { "pixiv.com", "phixiv.com" }
 ]
+
+URL_REGEX = re.compile(r"https?://\S+")
 
 CHANNELS_TO_COUNT = {
     "art": "art",
@@ -106,10 +108,9 @@ async def on_message(message):
 
     category = CHANNELS_TO_COUNT.get(message.channel.name)
     if category:
-        url_pattern = re.compile(r"^https?://\S+$")
         content = message.content.strip()
         
-        if url_pattern.fullmatch(content):
+        if URL_REGEX.fullmatch(content):
             if "discord.com" not in content and "tenor.com" not in content:
                 artcounting.increment_user_artcount(message.author.id, category)
 
@@ -161,6 +162,14 @@ async def on_message(message):
 
     await bot.process_commands(message)  # Keep commands working
 
+def strip_url_params(text):
+    def clean(match):
+        url = match.group(0)
+        parts = urlsplit(url)
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+    return URL_REGEX.sub(clean, text)
+
 def convert_links_to_embed(message):
     new_message = message
     converted = False
@@ -178,6 +187,9 @@ def convert_links_to_embed(message):
         new_message, num_subs = pattern.subn(replace_domain, new_message)
         if num_subs:
             converted = True
+
+    if converted:
+        strip_url_params(new_message) 
 
     return new_message, converted
 
