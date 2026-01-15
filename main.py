@@ -2,7 +2,6 @@ import embed, downloadvideo, gitimport, llm, getkonataxkagami, artcounting
 import os, io, asyncio, functools, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
-from urllib.parse import urlsplit, urlunsplit
 from PIL import Image
 from discord.ext import commands
 from discord import app_commands
@@ -159,6 +158,9 @@ async def on_message(message):
 def convert_links_to_embed(message):
     new_message = message
     converted = False
+
+    if "fixupx.com" in new_message:
+        return new_message, converted
 
     for original, embed in EMBED_LINKS:
         pattern = re.compile(
