@@ -151,8 +151,7 @@ async def on_message(message):
     if message.content:
         new_link, converted = convert_links_to_embed(message.content)
         if converted:
-            new_message = strip_url_params(new_link) 
-            await message.channel.send(content=new_message)
+            await message.channel.send(content=new_link)
             try:
                 await message.delete()
                 print("Original message deleted")
@@ -160,16 +159,9 @@ async def on_message(message):
                 print("Missing permissions to delete the original message")
             except discord.NotFound:
                 print("Original message already deleted")
+            return
 
     await bot.process_commands(message)  # Keep commands working
-
-def strip_url_params(text):
-    def clean(match):
-        url = match.group(0)
-        parts = urlsplit(url)
-        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
-
-    return URL_REGEX.sub(clean, text)
 
 def convert_links_to_embed(message):
     new_message = message
