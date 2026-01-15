@@ -151,17 +151,7 @@ async def on_message(message):
     if message.content:
         new_link, converted = convert_links_to_embed(message.content)
         if converted:
-            sent = await message.channel.send(new_link)
-
-            try:
-                await message.delete()
-                print("Original message deleted")
-            except discord.Forbidden:
-                print("Missing permissions to delete the original message")
-            except discord.NotFound:
-                print("Original message already deleted")
-
-            return
+            await message.reply(new_link, mention_author=False)
 
     await bot.process_commands(message)  # Keep commands working
 
