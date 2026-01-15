@@ -19,10 +19,10 @@ LUCKYSTARLINESPATH = "luckystar/lines.txt"
 conversation_context = []
 
 EMBED_LINKS = [
-    { "x.com", "fixupx.com" },
-    { "reddit.com", "rxddit.com" },
-    { "instagram.com", "eeinstagram.com" },
-    { "pixiv.com", "phixiv.com" }
+    { "https://x.com", "https://fixupx.com" },
+    { "reddit.com", "https://rxddit.com" },
+    { "https://instagram.com", "https://eeinstagram.com" },
+    { "https://pixiv.com", "https://phixiv.com" }
 ]
 
 URL_REGEX = re.compile(r"https?://\S+")
@@ -158,9 +158,6 @@ async def on_message(message):
 def convert_links_to_embed(message):
     new_message = message
     converted = False
-
-    if "fixupx.com" in new_message:
-        return new_message, converted
 
     for original, embed in EMBED_LINKS:
         pattern = re.compile(
