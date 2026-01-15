@@ -151,7 +151,6 @@ async def on_message(message):
     if message.content:
         new_link, converted = convert_links_to_embed(message.content)
         if converted:
-            new_message = strip_url_params(new_message) 
             await message.channel.send(content=new_link)
             try:
                 await message.delete()
@@ -162,14 +161,6 @@ async def on_message(message):
                 print("Original message already deleted")
 
     await bot.process_commands(message)  # Keep commands working
-
-def strip_url_params(text):
-    def clean(match):
-        url = match.group(0)
-        parts = urlsplit(url)
-        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
-
-    return URL_REGEX.sub(clean, text)
 
 def convert_links_to_embed(message):
     new_message = message
