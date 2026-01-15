@@ -153,6 +153,14 @@ async def on_message(message):
         if converted:
             await message.reply(new_link, mention_author=False)
 
+            try:
+                await message.suppress_embeds(True)
+                print("Original message embeds suppressed")
+            except discord.Forbidden:
+                print("Missing permissions to suppress embeds")
+            except discord.NotFound:
+                print("Original message already deleted")
+
     await bot.process_commands(message)  # Keep commands working
 
 def convert_links_to_embed(message):
