@@ -1,7 +1,7 @@
 __pycache__/
 .venv/
 images/
-*cookies.json
+*.json
 .env
 todo.txt
 *.log

@@ -2,6 +2,7 @@ import embed, downloadvideo, gitimport, llm, getkonataxkagami, artcounting
 import os, io, asyncio, functools, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
+from urllib.parse import urlparse, urlunparse
 from PIL import Image
 from discord.ext import commands
 from discord import app_commands
@@ -161,23 +162,21 @@ async def on_message(message):
     await bot.process_commands(message)  # Keep commands working
 
 def convert_links_to_embed(message):
-    print("Checking links to convert...")
     new_message = message
     converted = False
 
     for original, embed in EMBED_LINKS:
         pattern = re.compile(
-            rf"(https?://)?(www\.)?({re.escape(original)})",
+            rf"(https?://)?(www\.)?(?<!{re.escape(embed)}){re.escape(original)}",
             flags=re.IGNORECASE
         )
 
         def replace_domain(match):
-            scheme = match.group(1) or "" 
-            www = match.group(2) or "" 
+            scheme = match.group(1) or ""
             return f"{scheme}{embed}"
 
         new_message, num_subs = pattern.subn(replace_domain, new_message)
-        if num_subs > 0:
+        if num_subs:
             converted = True
 
     return new_message, converted
