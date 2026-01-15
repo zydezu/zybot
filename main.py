@@ -167,19 +167,7 @@ def strip_url_params(text):
     def clean(match):
         url = match.group(0)
         parts = urlsplit(url)
-
-        path = parts.path or ""
-
-        if parts.netloc.lower() == "fixupx.com" and (path == "" or path == "/"):
-            path = "/en"
-
-        return urlunsplit((
-            parts.scheme,
-            parts.netloc,
-            path,
-            "",
-            ""
-        ))
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
     return URL_REGEX.sub(clean, text)
 
