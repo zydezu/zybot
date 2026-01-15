@@ -167,7 +167,7 @@ def convert_links_to_embed(message):
 
     for original, embed in EMBED_LINKS:
         pattern = re.compile(
-            rf"(https?://)?(www\.)?(?<!{re.escape(embed)}){re.escape(original)}",
+            rf"(https?://)?(www\.)?{re.escape(original)}(?=/|$)",
             flags=re.IGNORECASE
         )
 
