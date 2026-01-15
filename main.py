@@ -149,9 +149,10 @@ async def on_message(message):
         pass
 
     if message.content:
-        new_link, converted = convert_links_to_embed(message.content)
+        new_message, converted = convert_links_to_embed(message.content)
         if converted:
-            await message.channel.send(content=new_link)
+            new_message = strip_url_params(new_message) 
+            await message.channel.send(content=new_message)
             try:
                 await message.delete()
                 print("Original message deleted")
@@ -187,9 +188,6 @@ def convert_links_to_embed(message):
         new_message, num_subs = pattern.subn(replace_domain, new_message)
         if num_subs:
             converted = True
-
-    if converted:
-        strip_url_params(new_message) 
 
     return new_message, converted
 
