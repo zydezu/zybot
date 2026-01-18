@@ -13,23 +13,6 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-def normalized_size(bytes, units=[' bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB']):
-    """
-    Recursively converts a size in bytes to a human-readable string with appropriate units.
-
-    Args:
-        bytes (float): The size in bytes to be converted.
-        units (list of str, optional): A list of units to use for conversion. Defaults to 
-                                       [' bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB'].
-
-    Returns:
-        str: The size converted to a human-readable string with the appropriate unit.
-    """
-    if bytes < 1024 or len(units) == 1:
-        return f"{round(bytes, 2):.2f}{units[0]}"
-    else:
-        return normalized_size(bytes / 1024, units[1:])
-
 def download_repo(url):
     log.info("Cloning from git...")
 
