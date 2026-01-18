@@ -7,5 +7,4 @@ gitpython
 pillow
 aiohttp
 requests
-urllib
 genai
