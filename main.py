@@ -45,7 +45,7 @@ bot = commands.Bot(command_prefix="zy!", intents=intents)
 ### ====== Slash commands ======
 @bot.tree.command(
     name="archive-video",
-    description="Download a video using yt-dlp and generate a HTML file with it's details.",
+    description="Download a video using yt-dlp and generate a HTML file with it's details",
 )
 @app_commands.describe(
     link="The link of the video you want to download"

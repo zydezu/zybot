@@ -1,6 +1,8 @@
 __pycache__/
 .venv/
 images/
+videos/downloaded
+listofvideos.txt
 *.json
 .env
 todo.txt

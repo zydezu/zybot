@@ -8,7 +8,8 @@ class bcolors:
     LINE = '\033[90m'
     ENDC = '\033[0m'
 
-VIDEO_LIST = "listofvideos.txt"
+TEMPLATE = "videos/template.txt"
+VIDEO_LIST = "videos/listofvideos.txt"
 
 def set_terminal_title(title):
     if os.name == 'nt':  # Windows
@@ -53,9 +54,9 @@ def startvideodownload(url=None, extraInfo=""):
         'getcomments': True,
         'writethumbnail': True,
         'outtmpl': {
-            'default': f'generated/{videoid}/videos/video.%(ext)s',
-            'infojson': f'generated/{videoid}/videos/video',
-            'thumbnail': f'generated/{videoid}/videos/video.%(ext)s',
+            'default': f'videos/downloads/{videoid}/videos/video.%(ext)s',
+            'infojson': f'videos/downloads/{videoid}/videos/video',
+            'thumbnail': f'videos/downloads/{videoid}/videos/video.%(ext)s',
         },
     }
 
@@ -85,20 +86,20 @@ def startvideodownload(url=None, extraInfo=""):
                 break
         return common_sub
 
-    fileslist = os.listdir('generated/{0}/videos'.format(videoid))
+    fileslist = os.listdir('videos/downloads/{0}/videos'.format(videoid))
     base = basestring(fileslist)[:-1]
     filename = base + '.mp4'
     imagepath = base + '.webp'
 
-    with open('template.txt', 'r', encoding="utf-8") as file:
+    with open(TEMPLATE, 'r', encoding="utf-8") as file:
         templatefile = file.read()
         outputfile = templatefile.format(videotitle=videotitle, filename=filename, icon=imagepath)
-        with open("generated/{0}/index.html".format(videoid), "w", encoding="utf-8") as writefile:
+        with open("videos/downloads/{0}/index.html".format(videoid), "w", encoding="utf-8") as writefile:
             writefile.writelines(outputfile)
 
     # Append the new line
     with open(VIDEO_LIST, 'a', encoding="utf-8") as file:
-        file.write("""\t{0} | <a href="generated/{1}/">generated/{1}/</a> | {2}<br/>\n""".format(
+        file.write("""\t{0} | <a href="videos/downloads/{1}/">videos/downloads/{1}/</a> | {2}<br/>\n""".format(
             videotitle, videoid, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
     # Read all lines

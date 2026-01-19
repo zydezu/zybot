@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark light">
+    <title>{videotitle}</title>
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../scripts/toggleTheme.js" defer></script>
+    <script src="../../scripts/canvas.js" defer></script>
+    <script src="../../scripts/index.min.js"></script>
+    <script src="../../scripts/jsoncommentsreader.js" defer></script>
+    <link rel="icon" type="videos/{icon}" href="videos/{icon}">
+</head>
+
+<body>
+    <div class="hidden backgroundBlur" id="BGBlur"></div>
+
+    <div id="navBar" class="navigationBar">
+        <div class="navText">
+            {videotitle} |
+            <a href="javascript:void(0)" onclick="clickChangeTheme()">Toggle theme</a> |
+            <a href="javascript:void(0)" onclick="viewSettings()">Settings</a>    
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="videoArea">
+            <section class="ambientWrapper">
+                <canvas width="22" height="16" class="ambientCanvas" aria-hidden="true" id="ambientcanvas"></canvas>
+            </section>
+            <video src="videos/{filename}" type="video/mp4" poster="videos/{icon}" controls playsinline
+                class="mainVideo roundVideo" id="ambientvideo"></video>
+            
+            <div class="underVideoStats">    
+                <div id="videoInfo"></div>
+                <div id="filterButtons" class="hidden">
+                    <button onclick="filterComments('Liked')">Filter comments by 💖liked</button>
+                    <button onclick="filterComments('Pinned')">Filter comments by 📌pinned</button>
+                    <button onclick="filterComments()">Remove filter</button>
+                    <br />
+                    <button id="sortingButton" onclick="switchSorting()">Sort by top</button>
+                    <button id="toggleReplies" onclick="toggleReplies()">Hide replies</button>
+                </div>
+                <div class="commentsArea">
+                    <div id="classicCommentCount"></div>
+                    <div id="classicCommentsBox"></div><br>
+                </div>    
+            </div>
+        </div>
+        <div class="sideBar" id="sideBarScroll">
+            <div id="commentCount"></div>
+            <div id="commentsBox"></div><br>
+        </div>
+    </div>
+
+    <div class="hidden" id="settingsBox">
+        <div class="settingsCloseButton">
+            <a href="javascript:void(0)" onclick="viewSettings()">Close</a>
+        </div>
+        <div class="settingsTitle">Settings</div>
+        <div class="settingOptions" id="settingsBoxJS">
+            <div class="settingSubheading">Apperance</div><hr />
+            Theme<a href="javascript:void(0)" class="settingsOption">Dark theme</a><br />
+            Ambient Mode <a href="javascript:void(0)" class="settingsOption">OFF</a>
+            <span class="settingsExtraInfo">(only available in dark theme)</span><br />
+
+            <div class="settingSubheading">Comments</div><hr />
+            Default comment position<a href="javascript:void(0)" class="settingsOption">Side</a><br />
+            Comments loaded initially<span class="settingsOption">20</span><br />
+            Subsequent comments at once<span class="settingsOption">5</span><br />
+
+            <br/><div class="settingsTitle">Loading menu...</div>
+        </div>
+    </div>
+</body>
+</html>
