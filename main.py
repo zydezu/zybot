@@ -137,7 +137,7 @@ async def on_message(message):
     if message.channel.name == "general":
         conversation_context.append(f"{message.author.display_name}: {message.content}")
 
-        if not (message.reference and message.reference.message_id) and random.random() < 0.01:
+        if not (message.reference and message.reference.message_id) and random.random() < 0.002:
             async with message.channel.typing():
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
                 await message.channel.send(llm_data)
