@@ -51,7 +51,7 @@ bot = commands.Bot(command_prefix="zy!", intents=intents)
     link="The link of the video you want to download"
 )
 @commands.has_permissions(administrator=True)
-async def generatepage(interaction: discord.Interaction, link: str):
+async def archive_video(interaction: discord.Interaction, link: str):
     await interaction.response.defer(ephemeral=False)
 
     message = await interaction.followup.send(
