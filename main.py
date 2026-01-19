@@ -150,7 +150,7 @@ async def on_message(message):
         elif random.random() < 0.001:
             await convert_images_to_avif(message)
 
-        if random.random() < 0.02:
+        if random.random() < 0.002:
             print("[main] Sending a random Lucky Star image from danbooru")
             image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
             if image_url: await message.channel.send(image_url)
