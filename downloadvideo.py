@@ -1,4 +1,4 @@
-import os, sys
+import os
 from datetime import datetime
 from yt_dlp import YoutubeDL
 
@@ -8,26 +8,44 @@ class bcolors:
     LINE = '\033[90m'
     ENDC = '\033[0m'
 
+DOWNLOAD_DIR = "videos/downloads"
 TEMPLATE = "videos/template.txt"
 VIDEO_LIST = "videos/listofvideos.txt"
 
-def set_terminal_title(title):
-    if os.name == 'nt':  # Windows
-        os.system(f"title {title}")
-    else:  # Unix/Linux/Mac
-        sys.stdout.write(f"\033]0;{title}\007")
-        sys.stdout.flush()
+def get_common_prefix(strings: list[str]) -> str:
+    if not strings:
+        return ""
+    prefix = strings[0]
+    for s in strings[1:]:
+        prefix = ''.join(c1 for c1, c2 in zip(prefix, s) if c1 == c2)
+        if not prefix:
+            break
+    return prefix
+
+def remove_duplicates_from_list(file_path: str):
+    if not os.path.exists(file_path):
+        return []
+
+    seen = set()
+    unique_lines = []
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            parts = line.strip().split('|')
+            if len(parts) < 2:
+                continue
+            key = (parts[0].strip(), parts[1].strip())
+            if key not in seen:
+                seen.add(key)
+                unique_lines.append(line)
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.writelines(unique_lines)
+
+    return unique_lines
 
 def startvideodownload(url=None, extraInfo=""):
     link = url
-    if url == None:
-        set_terminal_title("YouTube Page Generator")
-        print(f"{bcolors.OKBLUE}Enter the link of the {bcolors.WARNING}video{bcolors.OKBLUE} to generate a page for...{bcolors.ENDC}")
-        print(f"{bcolors.LINE}---------------------------------------")
-        link = input(f"{bcolors.WARNING}Link {bcolors.ENDC}> {bcolors.WARNING}")
-        print(f"{bcolors.LINE}---------------------------------------{bcolors.WARNING}")
-        print(f"{bcolors.OKBLUE}Downloading video...")
-        print(f"{bcolors.LINE}---------------------------------------{bcolors.ENDC}")
 
     ytdlp_opts = {
         "skip_download": True,
@@ -54,91 +72,57 @@ def startvideodownload(url=None, extraInfo=""):
         'getcomments': True,
         'writethumbnail': True,
         'outtmpl': {
-            'default': f'videos/downloads/{videoid}/videos/video.%(ext)s',
-            'infojson': f'videos/downloads/{videoid}/videos/video',
-            'thumbnail': f'videos/downloads/{videoid}/videos/video.%(ext)s',
+            'default': f'{DOWNLOAD_DIR}/{videoid}/videos/video.%(ext)s',
+            'infojson': f'{DOWNLOAD_DIR}/{videoid}/videos/video',
+            'thumbnail': f'{DOWNLOAD_DIR}/{videoid}/videos/video.%(ext)s',
         },
     }
 
-    set_terminal_title(f"Downloading {videotitle} [{videoid}] {extraInfo}...")
+    # Spend infinite attempts at downloading the video
     while True:
         try:
             with YoutubeDL(ytdlp_opts) as ytdlp:
                 ytdlp.download([link])
             break
-        except:
-                print(f"{bcolors.LINE}---------------------------------------{bcolors.ENDC}")
-                print(f"{bcolors.WARNING}Error! Retrying download...")
-                print(f"{bcolors.LINE}---------------------------------------{bcolors.ENDC}")
+        except Exception as e:
+            print(f"[downloadvideo] {e}. Retrying download...")
 
-    print(f"{bcolors.LINE}---------------------------------------{bcolors.ENDC}")
-    print(f"{bcolors.OKBLUE}Download done! Generating page...")
-    print(f"{bcolors.LINE}---------------------------------------{bcolors.ENDC}")
-    set_terminal_title("Generating page...")
+    print(f"[downloadvideo] Download done! Generating HTML page...")
 
-    def basestring(lst):
-        if not lst:
-            return ""
-        common_sub = lst[0]
-        for string in lst[1:]:
-            common_sub = ''.join(c1 for c1, c2 in zip(common_sub, string) if c1 == c2)
-            if not common_sub:
-                break
-        return common_sub
-
-    fileslist = os.listdir('videos/downloads/{0}/videos'.format(videoid))
-    base = basestring(fileslist)[:-1]
+    # Generate index.html for the video
+    files = os.listdir('{DOWNLOAD_DIR}/{0}/videos'.format(videoid))
+    base = get_common_prefix(files)[:-1]
     filename = base + '.mp4'
     imagepath = base + '.webp'
 
-    with open(TEMPLATE, 'r', encoding="utf-8") as file:
-        templatefile = file.read()
-        outputfile = templatefile.format(videotitle=videotitle, filename=filename, icon=imagepath)
-        with open("videos/downloads/{0}/index.html".format(videoid), "w", encoding="utf-8") as writefile:
-            writefile.writelines(outputfile)
+    with open(TEMPLATE, 'r', encoding='utf-8') as f:
+        template_content = f.read()
+    with open(os.path.join(DOWNLOAD_DIR, videoid, "index.html"), 'w', encoding='utf-8') as f:
+        f.write(template_content.format(videotitle=videotitle, filename=filename, icon=imagepath))
 
-    # Append the new line
-    with open(VIDEO_LIST, 'a', encoding="utf-8") as file:
-        file.write("""\t{0} | <a href="videos/downloads/{1}/">videos/downloads/{1}/</a> | {2}<br/>\n""".format(
-            videotitle, videoid, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+    # Add to video list and remove duplicates
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open(VIDEO_LIST, 'a', encoding='utf-8') as f:
+        f.write(f"\t{videotitle} | <a href=\"videos/downloads/{videoid}/\">videos/downloads/{videoid}/</a> | {timestamp}<br/>\n")
 
-    # Read all lines
-    with open(VIDEO_LIST, 'r', encoding="utf-8") as file:
-        allLines = file.readlines()
+    unique_lines = remove_duplicates_from_list(VIDEO_LIST)
 
-    # Remove duplicates while preserving order
-    seen = set()
-    uniqueLines = []
-    for line in allLines:
-        # Extract title and video ID (ignore timestamp)
-        parts = line.strip().split('|')
-        if len(parts) >= 2:
-            title = parts[0].strip()
-            video_link = parts[1].strip()
-            key = (title, video_link)
-            if key not in seen:
-                seen.add(key)
-                uniqueLines.append(line)
+    # Update main index.html
+    with open('index.html', 'w', encoding='utf-8') as f:
+        f.write(f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archived Videos</title>
+<link rel="stylesheet" href="style.css">
+<style>body{{margin:15px;}}</style>
+</head>
+<body>
+{"".join(unique_lines)}
+</body>
+</html>""")
 
-    # Overwrite the file with deduplicated lines
-    with open(VIDEO_LIST, 'w', encoding="utf-8") as file:
-        file.writelines(uniqueLines)
-
-    with open('index.html', 'w', encoding="utf-8") as file:
-        file.writelines("""<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Archived Videos</title>
-        <link rel="stylesheet" href="style.css">
-        <style>body{{margin:15px;}}</style>
-    </head>
-    <body>
-    {0}
-    </body>
-    </html>""".format("".join(uniqueLines)))
-
-    print("File written to index.html!")
+    print("[downloadvideo] Finished writing to index.html!")
 
     return videoid
