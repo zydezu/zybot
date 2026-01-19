@@ -50,7 +50,6 @@ bot = commands.Bot(command_prefix="zy!", intents=intents)
 @app_commands.describe(
     link="The link of the video you want to download"
 )
-@commands.has_permissions(administrator=True)
 async def archive_video(interaction: discord.Interaction, link: str):
     await interaction.response.defer(ephemeral=False)
 
@@ -80,8 +79,8 @@ async def shoot_and_kill_bot_grrrrr(interaction: discord.Interaction):
     name="send-konata-x-kagami",
     description="Send a random konata x kagami image to chat from Danbooru!"
 )
-@commands.has_permissions(administrator=True)
 async def send_konata_x_kagami(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=False)
     print("[main] Sending a random Lucky Star image from danbooru")
     image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
     if image_url: await interaction.followup.send(content=image_url)
