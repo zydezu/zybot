@@ -90,7 +90,7 @@ def startvideodownload(url=None, extraInfo=""):
     print(f"[downloadvideo] Download done! Generating HTML page...")
 
     # Generate index.html for the video
-    files = os.listdir('{DOWNLOAD_DIR}/{0}/videos'.format(videoid))
+    files = os.listdir(f"{DOWNLOAD_DIR}/{videoid}/videos")
     base = get_common_prefix(files)[:-1]
     filename = base + '.mp4'
     imagepath = base + '.webp'

@@ -14,7 +14,7 @@ def show_download_progress(link):
         description=f"Your video is being downloaded from: {link}",
         color=EMBED.YELLOW
     )
-    embed.set_footer(text="Please wait while the video is being processed.")
+    embed.set_footer(text="Please wait while the video is being processed")
     return embed
 
 def show_download_complete(link):
@@ -23,5 +23,5 @@ def show_download_complete(link):
         description=f"Your download has been completed successfully!",
         color=EMBED.GREEN
     )
-    embed.set_footer(text=f"It will be stored on the zy archive.")
+    embed.set_footer(text=f"It will be stored on the zy archive")
     return embed
