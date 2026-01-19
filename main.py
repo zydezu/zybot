@@ -67,11 +67,11 @@ async def archive_video(interaction: discord.Interaction, link: str):
     await message.edit(embed=completed_embed)
 
 @bot.tree.command(
-    name="restart",
-    description="Restart the app"
+    name="shoot-and-kill-bot-grrrrr",
+    description="Take the bot out back and restart the app"
 )
 @commands.has_permissions(administrator=True)
-async def restart(interaction: discord.Interaction):
+async def shoot_and_kill_bot_grrrrr(interaction: discord.Interaction):
     await interaction.response.send_message("Restarting...")
     await bot.close()
     gitimport.restart_bot()
