@@ -128,11 +128,11 @@ async def on_message(message):
     if message.channel.name == "general":
         conversation_context.append(f"{message.author.display_name}: {message.content}")
 
-        if not (message.reference and message.reference.message_id) and random.random() < 0.3:
+        if not (message.reference and message.reference.message_id) and random.random() < 0.05:
             async with message.channel.typing():
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
                 await message.channel.send(llm_data)
-        elif random.random() < 0.4:
+        elif random.random() < 0.3:
             print("[main] Sending a random Lucky Star quote")
             with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
                 luckystarlines = f.readlines()
@@ -141,7 +141,7 @@ async def on_message(message):
         elif random.random() < 0.4:
             await convert_images_to_avif(message)
 
-        if random.random() < 0.15:
+        if random.random() < 0.05:
             print("[main] Sending a random Lucky Star image from danbooru")
             image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
             if image_url: await message.channel.send(image_url)
