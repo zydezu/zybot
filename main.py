@@ -84,7 +84,7 @@ async def shoot_and_kill_bot_grrrrr(interaction: discord.Interaction):
 async def send_konata_x_kagami(interaction: discord.Interaction):
     print("[main] Sending a random Lucky Star image from danbooru")
     image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
-    if image_url: await interaction.followup.send(image_url)
+    if image_url: await interaction.followup.send(content=image_url)
 
 ### ====== Test commands ======
 @bot.command()
