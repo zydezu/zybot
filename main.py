@@ -44,8 +44,8 @@ bot = commands.Bot(command_prefix="zy!", intents=intents)
 
 ### ====== Slash commands ======
 @bot.tree.command(
-    name="generatepage",
-    description="Download a video and generate a page with the video and its details.",
+    name="archive-video",
+    description="Download a video using yt-dlp and generate a HTML file with it's details.",
 )
 @app_commands.describe(
     link="The link of the video you want to download"
@@ -67,7 +67,7 @@ async def generatepage(interaction: discord.Interaction, link: str):
     await message.edit(embed=completed_embed)
 
 @bot.tree.command(
-    name="restart",
+    name="Restart",
     description="Restart the app"
 )
 @commands.has_permissions(administrator=True)

@@ -23,5 +23,5 @@ def show_download_complete(link):
         description=f"Your download has been completed successfully!",
         color=EMBED.GREEN
     )
-    embed.set_footer(text=f"You can see it at: https://zyserver.hopto.org:9999/generated/{link}/")
+    embed.set_footer(text=f"It will be stored on the zy archive.")
     return embed
