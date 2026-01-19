@@ -76,6 +76,16 @@ async def shoot_and_kill_bot_grrrrr(interaction: discord.Interaction):
     await bot.close()
     gitimport.restart_bot()
 
+@bot.tree.command(
+    name="send-konata-x-kagami",
+    description="Send a random konata x kagami image to chat from Danbooru!"
+)
+@commands.has_permissions(administrator=True)
+async def send_konata_x_kagami(interaction: discord.Interaction):
+    print("[main] Sending a random Lucky Star image from danbooru")
+    image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
+    if image_url: await interaction.channel.send(image_url)
+
 ### ====== Test commands ======
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -128,20 +138,20 @@ async def on_message(message):
     if message.channel.name == "general":
         conversation_context.append(f"{message.author.display_name}: {message.content}")
 
-        if not (message.reference and message.reference.message_id) and random.random() < 0.05:
+        if not (message.reference and message.reference.message_id) and random.random() < 0.03:
             async with message.channel.typing():
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
                 await message.channel.send(llm_data)
-        elif random.random() < 0.15:
+        elif random.random() < 0.05:
             print("[main] Sending a random Lucky Star quote")
             with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
                 luckystarlines = f.readlines()
                 randomline = random.choice(luckystarlines).strip()
                 await message.channel.send(randomline)
-        elif random.random() < 0.4:
+        elif random.random() < 0.2:
             await convert_images_to_avif(message)
 
-        if random.random() < 0.05:
+        if random.random() < 0.02:
             print("[main] Sending a random Lucky Star image from danbooru")
             image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
             if image_url: await message.channel.send(image_url)
