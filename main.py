@@ -89,13 +89,13 @@ async def hi(ctx):
 
 @bot.command()
 async def k(ctx):
-    image_url = getkonataxkagami.get_image_url()
+    image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
     if image_url: await ctx.send(image_url)
 
 ### ====== Bot ======
 @bot.event
 async def on_ready():
-    print(f'Logged in as {bot.user} (ID: {bot.user.id})\n')
+    print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
 
 @bot.event
 async def on_message(message):
@@ -103,7 +103,7 @@ async def on_message(message):
     if message.author.bot:
         return
     
-    print(f"Processing {message.content}")
+    print(f"[main] Processing {message.content}")
 
     category = CHANNELS_TO_COUNT.get(message.channel.name)
     if category:
@@ -127,12 +127,12 @@ async def on_message(message):
     if message.channel.name == "general":
         conversation_context.append(f"{message.author.display_name}: {message.content}")
 
-        if not (message.reference and message.reference.message_id) and random.random() < 0.35:
+        if not (message.reference and message.reference.message_id) and random.random() < 0.3:
             async with message.channel.typing():
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
                 await message.channel.send(llm_data)
-        elif random.random() < 0.3:
-            print("Sending a random Lucky Star quote")
+        elif random.random() < 0.4:
+            print("[main] Sending a random Lucky Star quote")
             with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
                 luckystarlines = f.readlines()
                 randomline = random.choice(luckystarlines).strip()
@@ -140,9 +140,9 @@ async def on_message(message):
         elif random.random() < 0.4:
             await convert_images_to_avif(message)
 
-        if random.random() < 0.2:
-            print("Sending a random Lucky Star image from danbooru")
-            image_url = getkonataxkagami.get_image_url()
+        if random.random() < 0.15:
+            print("[main] Sending a random Lucky Star image from danbooru")
+            image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
             if image_url: await message.channel.send(image_url)
     else:
         pass
@@ -181,7 +181,7 @@ async def convert_images_to_avif(message):
 
     original_text = message.content or ""
 
-    print(f"Converting images in message to avif")
+    print(f"[main] Converting images in message to avif")
 
     avif_files = []
 
@@ -195,7 +195,7 @@ async def convert_images_to_avif(message):
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(attachment.url) as resp:
                 if resp.status != 200:
-                    print("Failed to download the image.")
+                    print("[main] Failed to download the image.")
                     return
                 data = await resp.read()
 
@@ -220,11 +220,11 @@ async def convert_images_to_avif(message):
         
         try:
             await message.delete()
-            print("Original message deleted")
+            print("[main] Original message deleted")
         except discord.Forbidden:
-            print("Missing permissions to delete the original message")
+            print("[main] Missing permissions to delete the original message")
         except discord.NotFound:
-            print("Original message already deleted")
+            print("[main] Original message already deleted")
 
 ### ====== Start bot ======
 def main():

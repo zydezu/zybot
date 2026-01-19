@@ -13,7 +13,7 @@ PROMPT_SUFFIX = "You're in a Discord server, so respond with no more than 2 sent
 
 def generate_content_llm(message, author, conversation_context):
     prompt = f"{PROMPT_SUFFIX}\n{author}'s message: {message}. \n\nThis is the conversation so far: {",".join(conversation_context[-15:])}. Try to respond with context in mind, don't respond with ANYTHING if someone else is being talked to."
-    print(prompt)
+    print(f"[llm] Prompt: {prompt}")
 
     for model in models:
         try:
@@ -23,9 +23,10 @@ def generate_content_llm(message, author, conversation_context):
             )
             if response and getattr(response, "text", None):
                 return response.text
-        except Exception as e:
-            continue  # try next model
+        except Exception:
+            continue
 
+    print(f"[llm] No available models to use!")
     return (
         "this idiot ran out of rate limits. what an idiot. "
         "please pay us $1200 for dooooooooooooooooooooooooooooooooooooooooooookieeee~~"

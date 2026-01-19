@@ -20,7 +20,7 @@ def increment_user_artcount(user_id : int, key : str):
 
     try:
         user_artcount_data[user_id][key] += 1
-        print(f"[artcount] +1 {key} to {user_id}")
+        print(f"[artcounting] +1 {key} to {user_id}")
     except:
         return False
 
