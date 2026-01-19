@@ -147,7 +147,7 @@ async def on_message(message):
                 luckystarlines = f.readlines()
                 randomline = random.choice(luckystarlines).strip()
                 await message.channel.send(randomline)
-        elif random.random() < 0.2:
+        elif random.random() < 0.001:
             await convert_images_to_avif(message)
 
         if random.random() < 0.02:

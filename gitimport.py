@@ -1,20 +1,9 @@
-import os, shutil, sys, logging
+import os, shutil, sys
 from pathlib import Path
 import git
 
-# Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("zybot.log"),
-        logging.StreamHandler()
-    ]
-)
-log = logging.getLogger(__name__)
-
 def download_repo(url):
-    log.info("Cloning from git...")
+    print("Cloning from git...")
 
     clone_directory = 'tempgitclonedir/'
     if delete_folder(clone_directory):
@@ -25,9 +14,9 @@ def download_repo(url):
         origin.fetch()
         repo.git.reset('--hard', 'origin/main')
 
-    log.info("Last 5 commits and changes:")
+    print("Last 5 commits and changes:")
     for commit in list(repo.iter_commits(max_count=5)):
-        log.info(f"{commit.message.strip()} ({commit.author.name})")
+        print(f"{commit.message.strip()} ({commit.author.name})")
 
     repo.close()
 
@@ -44,39 +33,39 @@ def download_repo(url):
             try:
                 shutil.move(str(each_item), str(trg_item_path))
             except Exception as e:
-                log.error(f"Error moving file {each_item}: {e}")
+                print(f"Error moving file {each_item}: {e}")
 
-    log.info("Cleaning up...")
+    print("Cleaning up...")
     try:
         delete_folder(src_path)
     except Exception as e:
-        log.warning(f"Cleanup failed: {e}")
-    log.info("Git download complete!")
+        print(f"Cleanup failed: {e}")
+    print("Git download complete!")
 
 def delete_folder(folder_path):
     if os.path.exists(folder_path):
         try:
             shutil.rmtree(folder_path)
-            log.info(f"Successfully deleted {folder_path}")
+            print(f"Successfully deleted {folder_path}")
             return True
         except Exception as e:
-            log.warning(f"Failed to delete {folder_path}: {e}")
+            print(f"Failed to delete {folder_path}: {e}")
             return False
     else:
-        log.warning(f"Folder does not exist: {folder_path}")
+        print(f"Folder does not exist: {folder_path}")
         return False
 
 def start_git_clone():
     try:
         with open("gitFilePath.txt", "r") as f:
             filepath = f.readline().strip()
-            log.info(f"Starting git clone from: {filepath}")
+            print(f"Starting git clone from: {filepath}")
             download_repo(filepath)
     except Exception as e:
-        log.error(f"Failed to read gitFilePath.txt: {e}")
+        print(f"Failed to read gitFilePath.txt: {e}")
 
 def restart_bot():
-    log.info("Git cloning...")
+    print("Git cloning...")
     start_git_clone()
-    log.info("Restarting bot...")
+    print("Restarting bot...")
     sys.exit(1)
