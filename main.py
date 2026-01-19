@@ -67,7 +67,7 @@ async def archive_video(interaction: discord.Interaction, link: str):
     await message.edit(embed=completed_embed)
 
 @bot.tree.command(
-    name="Restart",
+    name="restart",
     description="Restart the app"
 )
 @commands.has_permissions(administrator=True)
