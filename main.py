@@ -132,7 +132,7 @@ async def on_message(message):
             async with message.channel.typing():
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
                 await message.channel.send(llm_data)
-        elif random.random() < 0.3:
+        elif random.random() < 0.15:
             print("[main] Sending a random Lucky Star quote")
             with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
                 luckystarlines = f.readlines()
