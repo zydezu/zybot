@@ -95,6 +95,7 @@ async def k(ctx):
 ### ====== Bot ======
 @bot.event
 async def on_ready():
+    await bot.change_presence(status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES"))
     print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
 
 @bot.event
