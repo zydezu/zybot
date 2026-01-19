@@ -1,7 +1,7 @@
 __pycache__/
 .venv/
 images/
-videos/downloaded
+videos/downloads
 listofvideos.txt
 *.json
 .env
