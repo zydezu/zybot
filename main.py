@@ -19,8 +19,7 @@ LUCKYSTARLINESPATH = "luckystar/lines.txt"
 conversation_context = []
 
 EMBED_LINKS = [
-    { "https://x.com", "https://fixupx.com" },
-    { "reddit.com", "https://rxddit.com" },
+    { "https://reddit.com", "https://rxddit.com" },
     { "https://instagram.com", "https://eeinstagram.com" },
     { "https://pixiv.com", "https://phixiv.com" }
 ]
