@@ -100,6 +100,10 @@ async def k(ctx):
     image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
     if image_url: await ctx.send(image_url)
 
+@bot.command()
+async def pettan(ctx):
+    await ctx.send(file=discord.File("media/つるぺったん.mp3"))
+
 ### ====== Bot ======
 @bot.event
 async def on_ready():
