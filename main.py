@@ -1,9 +1,9 @@
-import embed, downloadvideo, gitimport, llm, getkonataxkagami, artcounting
+import embed, downloadvideo, gitimport, llm, getkonataxkagami, artcounting, commits
 import os, io, asyncio, functools, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
 from PIL import Image
-from discord.ext import commands
+from discord.ext import tasks, commands
 from discord import app_commands
 import discord
 
@@ -14,6 +14,7 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 ZYBOTID = 1460308838879072266
+COMMITS_CHANNEL_ID = 1467708228917002431
 
 LUCKYSTARLINESPATH = "luckystar/lines.txt"
 conversation_context = []
@@ -108,6 +109,7 @@ async def pettan(ctx):
 @bot.event
 async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES"))
+    check_commits.start()
     print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
 
 @bot.event
@@ -238,6 +240,15 @@ async def convert_images_to_avif(message):
             print("[main] Missing permissions to delete the original message")
         except discord.NotFound:
             print("[main] Original message already deleted")
+
+@tasks.loop(minutes=1)
+async def check_commits():
+    channel = bot.get_channel(COMMITS_CHANNEL_ID)
+
+    new_commit_embeds = commits.check_commits(os.getenv('GITHUB_TOKEN'), os.getenv('GITHUB_USERNAME'))
+
+    for commit in new_commit_embeds:
+        await channel.send(embed=commit)
 
 ### ====== Start bot ======
 def main():
