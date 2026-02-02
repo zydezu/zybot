@@ -58,4 +58,5 @@ def check_commits(github_token, github_username):
     
     save_seen_shas(new_shas)
 
+    new_commits.sort(key=lambda c: c["date"])
     return new_commits

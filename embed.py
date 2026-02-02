@@ -7,6 +7,7 @@ class EMBED:
     LIGHT_GREEN = 0x71bf45
     LIGHT_BLUE = 0x27bcfc
     YELLOW = 0xffe100
+    PURPLE = 0x7289da
 
 def show_download_progress(link):
     embed = discord.Embed(
@@ -28,10 +29,13 @@ def show_download_complete(link):
 
 def show_new_commit(repo, author, message, date, url):
     embed = discord.Embed(
-        title=f"New commit in {repo} by {author}",
+        title=f"[{repo}] 1 new commit",
         description=message,
-        color=EMBED.GREEN,
+        color=EMBED.PURPLE,
         url=url
     )
-    embed.set_footer(text=date)
+
+    embed.set_author(name=author, icon_url="https://avatars.githubusercontent.com/u/50119098")
+    embed.set_footer(text=f"Committed on {date}")
+    
     return embed
