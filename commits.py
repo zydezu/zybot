@@ -43,20 +43,30 @@ def check_commits(github_token, github_username):
     new_shas = set(seen_shas)
     repos = get_repos(github_username, headers)
 
-    new_commits = []
-    
+    new_commit_dicts = []
+
     for repo in repos:
         repo_name = repo["name"]
         commits = get_commits(github_username, repo_name, headers)
         for commit in commits:
             sha = commit["sha"]
             if sha not in seen_shas:
-                new_commits.append(
-                    embed.show_new_commit(commit['repo'], commit['author'], commit['message'], commit['date'], commit['url'])
-                )
+                new_commit_dicts.append({
+                    "repo": commit['repo'],
+                    "author": commit['author'],
+                    "message": commit['message'],
+                    "date": commit['date'],
+                    "url": commit['url'],
+                })
                 new_shas.add(sha)
-    
+
     save_seen_shas(new_shas)
 
-    new_commits.sort(key=lambda c: c["date"])
+    new_commit_dicts.sort(key=lambda c: c["date"])
+
+    new_commits = [
+        embed.show_new_commit(c['repo'], c['author'], c['message'], c['date'], c['url'])
+        for c in new_commit_dicts
+    ]
+
     return new_commits
