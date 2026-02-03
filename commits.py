@@ -54,6 +54,7 @@ def check_commits(github_token, github_username):
                 new_commit_dicts.append({
                     "repo": commit['repo'],
                     "author": commit['author'],
+                    "author_avatar_url": repo["owner"]["avatar_url"],
                     "message": commit['message'],
                     "date": commit['date'],
                     "url": commit['url'],
@@ -65,7 +66,7 @@ def check_commits(github_token, github_username):
     new_commit_dicts.sort(key=lambda c: c["date"])
 
     new_commits = [
-        embed.show_new_commit(c['repo'], c['author'], c['message'], c['date'], c['url'])
+        embed.show_new_commit(c['repo'], c['author'], c['author_avatar_url'], c['message'], c['date'], c['url'])
         for c in new_commit_dicts
     ]
 

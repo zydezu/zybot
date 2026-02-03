@@ -27,7 +27,7 @@ def show_download_complete(link):
     embed.set_footer(text=f"It will be stored on the zy archive")
     return embed
 
-def show_new_commit(repo, author, message, date, url):
+def show_new_commit(repo, author, author_avatar_url, message, date, url):
     embed = discord.Embed(
         title=f"[{repo}] 1 new commit",
         description=message,
@@ -35,7 +35,7 @@ def show_new_commit(repo, author, message, date, url):
         url=url
     )
 
-    embed.set_author(name=author, icon_url="https://avatars.githubusercontent.com/u/50119098")
+    embed.set_author(name=author, icon_url=author_avatar_url)
     embed.set_footer(text=f"Committed on {date}")
     
     return embed
