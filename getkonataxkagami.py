@@ -30,7 +30,12 @@ def get_image_url(danbooru_login, danbooru_api_key, query=None, rating=None):
         if not posts:
             print(f"[getkonataxkagami] No posts found for query: {search_tags}")
         else:
-            post = random.choice(posts)
+            # Filter posts that have file_url
+            valid_posts = [post for post in posts if 'file_url' in post and post['file_url']]
+            if not valid_posts:
+                print(f"[getkonataxkagami] No valid posts with file_url found for query: {search_tags}")
+                return
+            post = random.choice(valid_posts)
             return post['file_url']
     else:
         print(f"[getkonataxkagami] Error: {response.status_code}")
