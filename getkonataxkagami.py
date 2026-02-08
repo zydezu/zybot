@@ -12,7 +12,11 @@ params = {
 
 def get_image_url(danbooru_login, danbooru_api_key, query=None, rating=None):
     if query:
-        expander = TagExpander()
+        expander = TagExpander(
+            username=danbooru_login,
+            api_key=danbooru_api_key,
+            use_cache=True
+        )
         expanded_tags = expander.expand_tags(query)
         search_tags = " ".join(expanded_tags)
         if rating:
