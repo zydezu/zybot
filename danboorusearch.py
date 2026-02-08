@@ -10,22 +10,52 @@ params = {
     "limit": LIMIT
 }
 
+def tag_exists(tag, username, api_key):
+    url = "https://danbooru.donmai.us/tags.json"
+    params = {
+        "search[name_matches]": tag,
+        "limit": 1
+    }
+
+    r = requests.get(url, params=params, auth=(username, api_key))
+    r.raise_for_status()
+    data = r.json()
+
+    return len(data) > 0
+
 def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
     if query:
+        tags = query.split()
+
         expander = TagExpander(
             use_cache=True,
             cache_dir="tag_cache"
         )
-        expander.expand_tags([query])
-        canonical_tags = expander.get_aliases(query)
-        search_tags = " ".join(canonical_tags)
+
+        resolved_tags = []
+
+        for tag in tags:
+            if tag_exists(tag, danbooru_username, danbooru_api_key):
+                resolved_tags.append(tag)
+            else:
+                expander.expand_tags([tag])
+                aliases = expander.get_aliases(tag)
+
+                if aliases:
+                    resolved_tags.extend(aliases)
+                else:
+                    resolved_tags.append(tag)
+
+        search_tags = " ".join(resolved_tags)
+
         if rating:
             search_tags += f" rating:{rating}"
+
     else:
         search_tags = SEARCH_TAGS
         if rating:
             search_tags += f" rating:{rating}"
-    
+
     params = {
         "tags": search_tags,
         "limit": LIMIT
