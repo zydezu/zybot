@@ -8,3 +8,4 @@ pillow
 aiohttp
 requests
 google-genai
+danbooru-tag-expander

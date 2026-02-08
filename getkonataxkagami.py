@@ -1,4 +1,5 @@
 import random, requests
+from danbooru_tag_expander import TagExpander
 
 URL = "https://danbooru.donmai.us/posts.json"
 SEARCH_TAGS = "izumi_konata hiiragi_kagami rating:s"
@@ -11,7 +12,9 @@ params = {
 
 def get_image_url(danbooru_login, danbooru_api_key, query=None, rating=None):
     if query:
-        search_tags = query
+        expander = TagExpander()
+        expanded_tags = expander.expand_tags(query)
+        search_tags = " ".join(expanded_tags)
         if rating:
             search_tags += f" rating:{rating}"
     else:
