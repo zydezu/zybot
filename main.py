@@ -160,13 +160,13 @@ async def on_message(message):
     if any(user.id == ZYBOTID for user in message.mentions):
         async with message.channel.typing():
             llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
-            await message.channel.send(llm_data)
+            await message.reply(llm_data)
     elif message.reference and message.reference.message_id:
         replied_message = message.reference.resolved
         if replied_message and replied_message.author.id == ZYBOTID:
             async with message.channel.typing():
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
-                await message.channel.send(llm_data)
+                await message.reply(llm_data)
 
     if message.channel.name == "general":
         conversation_context.append(f"{message.author.display_name}: {message.content}")
