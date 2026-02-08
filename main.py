@@ -1,4 +1,4 @@
-import embed, downloadvideo, gitimport, llm, getkonataxkagami, artcounting, commits
+import embed, downloadvideo, gitimport, llm, danboorusearch, artcounting, commits
 import os, io, asyncio, functools, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
@@ -82,7 +82,7 @@ async def shoot_and_kill_bot_grrrrr(interaction: discord.Interaction):
 async def send_konata_x_kagami(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=False)
     print("[main] Sending a random Lucky Star image from danbooru")
-    image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
+    image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
     if image_url: await interaction.followup.send(content=image_url)
 
 @bot.tree.command(
@@ -102,7 +102,7 @@ async def search_danbooru(interaction: discord.Interaction, query: str, rating: 
     await interaction.response.defer(ephemeral=False)
     rating_value = rating.value if rating else "s"
     print(f"[main] Searching Danbooru with query: {query}, rating: {rating_value}")
-    image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'), query, rating_value)
+    image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'), query, rating_value)
     if image_url: 
         await interaction.followup.send(content=image_url)
     else:
@@ -121,7 +121,7 @@ async def hi(ctx):
 
 @bot.command()
 async def k(ctx):
-    image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
+    image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
     if image_url: await ctx.send(image_url)
 
 @bot.command()
@@ -180,7 +180,7 @@ async def on_message(message):
 
         if random.random() < 0.002:
             print("[main] Sending a random Lucky Star image from danbooru")
-            image_url = getkonataxkagami.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
+            image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_LOGIN'), os.getenv('DANBOORU_API_KEY'))
             if image_url: await message.channel.send(image_url)
     else:
         pass
