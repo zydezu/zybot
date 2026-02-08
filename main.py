@@ -102,7 +102,13 @@ async def search_danbooru(interaction: discord.Interaction, query: str, rating: 
     await interaction.response.defer(ephemeral=False)
     rating_value = rating.value if rating else "s"
     print(f"[main] Searching Danbooru with query: {query}, rating: {rating_value}")
-    image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_USERNAME'), os.getenv('DANBOORU_API_KEY'), query, rating_value)
+    image_url = await asyncio.to_thread(
+        danboorusearch.get_image_url,
+        os.getenv('DANBOORU_USERNAME'),
+        os.getenv('DANBOORU_API_KEY'),
+        query,
+        rating_value
+    )
     if image_url: 
         await interaction.followup.send(content=image_url)
     else:
