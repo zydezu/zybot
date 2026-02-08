@@ -16,7 +16,7 @@ def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
             use_cache=True,
             cache_dir="tag_cache"
         )
-        expander.expand_tags(["konata"])
+        expander.expand_tags([query])
         canonical_tags = expander.get_aliases(query)
         search_tags = " ".join(canonical_tags)
         if rating:
