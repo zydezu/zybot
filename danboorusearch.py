@@ -10,15 +10,15 @@ params = {
     "limit": LIMIT
 }
 
-def get_image_url(danbooru_login, danbooru_api_key, query=None, rating=None):
+def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
     if query:
         expander = TagExpander(
-            username=danbooru_login,
-            api_key=danbooru_api_key,
-            use_cache=True
+            use_cache=True,
+            cache_dir="tag_cache"
         )
-        expanded_tags = expander.expand_tags(query)
-        search_tags = " ".join(expanded_tags)
+        expander.expand_tags(["konata"])
+        canonical_tags = expander.get_aliases(query)
+        search_tags = " ".join(canonical_tags)
         if rating:
             search_tags += f" rating:{rating}"
     else:
@@ -31,7 +31,7 @@ def get_image_url(danbooru_login, danbooru_api_key, query=None, rating=None):
         "limit": LIMIT
     }
     
-    response = requests.get(URL, params=params, auth=(danbooru_login, danbooru_api_key))
+    response = requests.get(URL, params=params, auth=(danbooru_username, danbooru_api_key))
     if response.status_code == 200:
         posts = response.json()
         if not posts:

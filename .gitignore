@@ -2,6 +2,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 images/
+tag_cache/
 videos/downloads
 listofvideos.txt
 *.json
