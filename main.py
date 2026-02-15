@@ -1,5 +1,5 @@
 import embed, downloadvideo, gitimport, llm, danboorusearch, artcounting, commits
-import os, io, asyncio, functools, aiohttp, random, re
+import os, io, asyncio, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
 from PIL import Image
@@ -20,10 +20,14 @@ LUCKYSTARLINESPATH = "luckystar/lines.txt"
 conversation_context = []
 
 EMBED_LINKS = [
-    { "https://reddit.com", "https://rxddit.com" },
-    { "https://instagram.com", "https://eeinstagram.com" },
-    { "https://pixiv.com", "https://phixiv.com" }
+    ("https://reddit.com", "https://rxddit.com"),
+    ("https://www.reddit.com", "https://www.rxddit.com"),
+    ("https://instagram.com", "https://kkinstagram.com"),
+    ("https://www.instagram.com", "https://www.kkinstagram.com"),
+    ("https://pixiv.com", "https://phixiv.com")
 ]
+
+LUCKY_STAR_LINES = []
 
 URL_REGEX = re.compile(r"https?://\S+")
 
@@ -40,6 +44,7 @@ intents = discord.Intents.default()
 intents.guilds = True
 intents.message_content = True
 intents.members = True
+intents.dm_messages = True
 bot = commands.Bot(command_prefix="zy!", intents=intents)
 
 ### ====== Slash commands ======
@@ -58,8 +63,7 @@ async def archive_video(interaction: discord.Interaction, link: str):
     )
 
     # Run the blocking download in a separate thread so it doesn't block the event loop
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, functools.partial(downloadvideo.startvideodownload, link))
+    result = await asyncio.to_thread(downloadvideo.startvideodownload, link)
 
     completed_embed = embed.show_download_complete(result)
 
@@ -132,19 +136,27 @@ async def k(ctx):
 
 @bot.command()
 async def pettan(ctx):
-    await ctx.send(file=discord.File("media/つるぺったん.mp3"))
+    await ctx.send(file=discord.File("media/music/つるぺったん.mp3"))
 
 ### ====== Bot ======
 @bot.event
 async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES"))
     check_commits.start()
+    await check_commits()
     print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
 
 @bot.event
 async def on_message(message):
-    # Prevent bot from responding to itself
     if message.author.bot:
+        return
+    
+    if isinstance(message.channel, discord.DMChannel):
+        print(f"[main] DM from {message.author}: {message.content}")
+        async with message.channel.typing():
+            llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
+            await message.reply(llm_data)
+        await bot.process_commands(message)
         return
     
     print(f"[main] Processing {message.content}")
@@ -170,26 +182,27 @@ async def on_message(message):
 
     if message.channel.name == "general":
         conversation_context.append(f"{message.author.display_name}: {message.content}")
+        if len(conversation_context) > 100:
+            conversation_context.pop(0)
 
-        if not (message.reference and message.reference.message_id) and random.random() < 0.002:
+        rand = random.random()
+        if not (message.reference and message.reference.message_id) and rand < 0.002:
             async with message.channel.typing():
                 llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
                 await message.channel.send(llm_data)
-        elif random.random() < 0.02:
+        elif rand < 0.02:
             print("[main] Sending a random Lucky Star quote")
-            with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
-                luckystarlines = f.readlines()
-                randomline = random.choice(luckystarlines).strip()
-                await message.channel.send(randomline)
-        elif random.random() < 0.001:
-            await convert_images_to_avif(message)
-
-        if random.random() < 0.002:
+            if not LUCKY_STAR_LINES:
+                with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
+                    LUCKY_STAR_LINES.extend(f.readlines())
+            randomline = random.choice(LUCKY_STAR_LINES).strip()
+            await message.channel.send(randomline)
+        elif rand < 0.021:
             print("[main] Sending a random Lucky Star image from danbooru")
             image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_USERNAME'), os.getenv('DANBOORU_API_KEY'))
             if image_url: await message.channel.send(image_url)
-    else:
-        pass
+        elif rand < 0.022:
+            await convert_images_to_avif(message)
 
     if message.content:
         new_link, converted = convert_links_to_embed(message.content)
@@ -203,15 +216,15 @@ def convert_links_to_embed(message):
     new_message = message
     converted = False
 
-    for original, embed in EMBED_LINKS:
+    for original, embed_link in EMBED_LINKS:
         pattern = re.compile(
             rf"(https?://)?(www\.)?{re.escape(original)}(?=[/?#]|$)",
             flags=re.IGNORECASE
         )
 
-        def replace_domain(match):
+        def replace_domain(match, embed_link=embed_link):
             scheme = match.group(1) or ""
-            return f"{scheme}{embed}"
+            return f"{scheme}{embed_link}"
 
         new_message, num_subs = pattern.subn(replace_domain, new_message)
         if num_subs:
