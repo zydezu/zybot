@@ -141,8 +141,8 @@ async def pettan(ctx):
 @bot.command()
 async def accentcolour(ctx):
     hex_color, color_image = graphics.get_accent_colour(ctx.author)
-    embed, file = embed.show_accent_colour(hex_color, color_image)
-    await ctx.send(embed=embed, file=file)
+    embed_to_send, file = embed.show_accent_colour(hex_color, color_image)
+    await ctx.send(embed=embed_to_send, file=file)
 
 ### ====== Bot ======
 @bot.event
