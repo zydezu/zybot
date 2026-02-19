@@ -1,4 +1,4 @@
-import discord
+import discord, io
 
 class EMBED:
     STANDARD = 0xbc0839
@@ -27,15 +27,17 @@ def show_download_complete(link):
     embed.set_footer(text=f"It will be stored on the zy archive")
     return embed
 
-def show_new_commit(repo, author, author_avatar_url, message, date, url):
+def show_accent_colour(hex_color, color_image):
     embed = discord.Embed(
-        title=f"[{repo}] 1 new commit",
-        description=message,
-        color=EMBED.PURPLE,
-        url=url
+        title="Accent Colour",
+        description=f"**{hex_color}**",
+        color=int(hex_color.replace('#', ''), 16)
     )
-
-    embed.set_author(name=author, icon_url=author_avatar_url)
-    embed.set_footer(text=f"Committed on {date}")
     
-    return embed
+    image_bytes = io.BytesIO()
+    color_image.save(image_bytes, format='PNG')
+    image_bytes.seek(0)
+    embed.set_image(url="attachment://color.png")
+    
+    file = discord.File(image_bytes, filename="color.png")
+    return embed, file

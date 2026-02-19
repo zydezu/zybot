@@ -1,4 +1,4 @@
-import embed, downloadvideo, gitimport, llm, danboorusearch, artcounting, commits
+import embed, downloadvideo, gitimport, llm, danboorusearch, artcounting, commits, graphics
 import os, io, asyncio, aiohttp, random, re
 from dotenv import load_dotenv
 from multiprocessing import freeze_support
@@ -137,6 +137,12 @@ async def k(ctx):
 @bot.command()
 async def pettan(ctx):
     await ctx.send(file=discord.File("media/music/つるぺったん.mp3"))
+
+@bot.command()
+async def accentcolour(ctx):
+    hex_color, color_image = graphics.get_accent_colour(ctx.author)
+    embed, file = embed.show_accent_colour(hex_color, color_image)
+    await ctx.send(embed=embed, file=file)
 
 ### ====== Bot ======
 @bot.event
