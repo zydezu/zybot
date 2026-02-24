@@ -203,7 +203,7 @@ async def on_message(message):
                     LUCKY_STAR_LINES.extend(f.readlines())
             randomline = random.choice(LUCKY_STAR_LINES).strip()
             await message.channel.send(randomline)
-        elif rand < 0.021:
+        elif rand < 0.05:
             print("[main] Sending a random Lucky Star image from danbooru")
             image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_USERNAME'), os.getenv('DANBOORU_API_KEY'))
             if image_url: await message.channel.send(image_url)
