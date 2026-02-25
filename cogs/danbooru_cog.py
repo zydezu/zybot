@@ -3,7 +3,7 @@ import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
-import danboorusearch
+import scripts.danboorusearch as danboorusearch
 
 class DanbooruCog(commands.Cog):
     def __init__(self, bot):

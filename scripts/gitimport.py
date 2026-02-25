@@ -57,12 +57,12 @@ def delete_folder(folder_path):
 
 def start_git_clone():
     try:
-        with open("gitFilePath.txt", "r") as f:
+        with open("data/gitFilePath.txt", "r") as f:
             filepath = f.readline().strip()
             print(f"Starting git clone from: {filepath}")
             download_repo(filepath)
     except Exception as e:
-        print(f"Failed to read gitFilePath.txt: {e}")
+        print(f"Failed to read data/gitFilePath.txt: {e}")
 
 def restart_bot():
     print("Git cloning...")

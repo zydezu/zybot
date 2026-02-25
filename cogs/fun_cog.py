@@ -2,8 +2,8 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
-import danboorusearch
-import graphics
+import scripts.danboorusearch as danboorusearch
+import scripts.graphics as graphics
 import embed as embed_module
 
 class FunCog(commands.Cog):

@@ -29,7 +29,7 @@ def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
 
         expander = TagExpander(
             use_cache=True,
-            cache_dir="tag_cache"
+            cache_dir="data/tag_cache"
         )
 
         resolved_tags = []

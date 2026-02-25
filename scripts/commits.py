@@ -2,7 +2,7 @@ import embed
 import requests, os
 from dotenv import load_dotenv
 
-SEEN_FILE = "seencommits.txt"
+SEEN_FILE = "data/seencommits.txt"
 
 def load_seen_shas():
     if not os.path.exists(SEEN_FILE):

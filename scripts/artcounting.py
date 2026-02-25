@@ -1,6 +1,6 @@
 import json
 
-ARTCOUNT = 'sentartcount.json'
+ARTCOUNT = 'data/sentartcount.json'
 
 def get_user_artcount_json():
     try:

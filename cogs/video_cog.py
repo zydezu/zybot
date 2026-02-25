@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import embed as embed_module
-import downloadvideo
+import scripts.downloadvideo as downloadvideo
 
 class VideoCog(commands.Cog):
     def __init__(self, bot):

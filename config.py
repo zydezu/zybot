@@ -8,7 +8,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 ZYBOTID = 1460308838879072266
 COMMITS_CHANNEL_ID = 1467708228917002431
 
-LUCKYSTARLINESPATH = "luckystar/lines.txt"
+LUCKYSTARLINESPATH = "data/luckystar/lines.txt"
 
 EMBED_LINKS = [
     ("https://reddit.com", "https://rxddit.com"),

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-import gitimport
+import scripts.gitimport as gitimport
 
 class AdminCog(commands.Cog):
     def __init__(self, bot):

@@ -1,10 +1,13 @@
-import embed, downloadvideo, gitimport, llm, danboorusearch, artcounting, commits, graphics
-import os, asyncio, aiohttp, random, re, io
+import scripts.llm as llm
+import scripts.danboorusearch as danboorusearch
+import scripts.artcounting as artcounting
+import scripts.commits as commits
+import os, random
 from config import (
     TOKEN, ZYBOTID, COMMITS_CHANNEL_ID, 
     LUCKYSTARLINESPATH, CHANNELS_TO_COUNT, URL_REGEX
 )
-from utils.message_utils import convert_links_to_embed, convert_images_to_avif
+from scripts.message_utils import convert_links_to_embed, convert_images_to_avif
 from multiprocessing import freeze_support
 from PIL import Image
 from discord.ext import tasks, commands
