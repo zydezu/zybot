@@ -27,7 +27,7 @@ def show_download_complete(link):
     embed.set_footer(text=f"It will be stored on the zy archive")
     return embed
 
-def show_new_commit(repo, author, author_avatar_url, message, date, url, additions=None, deletions=None, changed_files=None):
+def show_new_commit(repo, author, author_avatar_url, message, date, url, additions=None, deletions=None):
     embed = discord.Embed(
         title=f"[{repo}] 1 new commit",
         description=message,
@@ -39,13 +39,8 @@ def show_new_commit(repo, author, author_avatar_url, message, date, url, additio
     
     if additions is not None and deletions is not None:
         stats_text = f"```diff\n+{additions} lines\n-{deletions} lines\n```"
-        if changed_files is not None:
-            stats_text += f"{changed_files} file(s) changed"
-        embed.add_field(name="Changes", value=stats_text, inline=False)
+        embed.description = f"{message}\n{stats_text}"
     else:
-        embed.set_footer(text=f"Committed on {date}")
-    
-    if additions is None:
         embed.set_footer(text=f"Committed on {date}")
     
     return embed

@@ -114,7 +114,7 @@ def check_commits(github_token, github_username):
     new_commit_dicts.sort(key=lambda c: c["date"])
 
     new_commits = [
-        embed.show_new_commit(c['repo'], c['author'], c['author_avatar_url'], c['message'], c['date'], c['url'], c.get('additions'), c.get('deletions'), c.get('changed_files'))
+        embed.show_new_commit(c['repo'], c['author'], c['author_avatar_url'], c['message'], c['date'], c['url'], c.get('additions'), c.get('deletions'))
         for c in new_commit_dicts
     ]
 
