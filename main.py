@@ -1,6 +1,10 @@
 import embed, downloadvideo, gitimport, llm, danboorusearch, artcounting, commits, graphics
-import os, io, asyncio, aiohttp, random, re
-from dotenv import load_dotenv
+import os, asyncio, aiohttp, random, re, io
+from config import (
+    TOKEN, ZYBOTID, COMMITS_CHANNEL_ID, 
+    LUCKYSTARLINESPATH, CHANNELS_TO_COUNT, URL_REGEX
+)
+from utils.message_utils import convert_links_to_embed, convert_images_to_avif
 from multiprocessing import freeze_support
 from PIL import Image
 from discord.ext import tasks, commands
@@ -9,33 +13,8 @@ import discord
 
 os.system("") # Needed for message to have colour in the terminal
 
-# Load environment variables
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-
-ZYBOTID = 1460308838879072266
-COMMITS_CHANNEL_ID = 1467708228917002431
-
-LUCKYSTARLINESPATH = "luckystar/lines.txt"
 conversation_context = []
-
-EMBED_LINKS = [
-    ("https://reddit.com", "https://rxddit.com"),
-    ("https://www.reddit.com", "https://www.rxddit.com"),
-    ("https://instagram.com", "https://kkinstagram.com"),
-    ("https://www.instagram.com", "https://www.kkinstagram.com"),
-    ("https://pixiv.com", "https://phixiv.com")
-]
-
 LUCKY_STAR_LINES = []
-
-URL_REGEX = re.compile(r"https?://\S+")
-
-CHANNELS_TO_COUNT = {
-    "art": "art",
-    "yaoi": "art",
-    "yuri": "yuri"
-}
 
 # ---------------
 # BOT SETUP
@@ -47,107 +26,16 @@ intents.members = True
 intents.dm_messages = True
 bot = commands.Bot(command_prefix="zy!", intents=intents)
 
-### ====== Slash commands ======
-@bot.tree.command(
-    name="archive-video",
-    description="Download a video using yt-dlp and generate a HTML file with it's details",
-)
-@app_commands.describe(
-    link="The link of the video you want to download"
-)
-async def archive_video(interaction: discord.Interaction, link: str):
-    await interaction.response.defer(ephemeral=False)
-
-    message = await interaction.followup.send(
-        embed=embed.show_download_progress(link)
-    )
-
-    # Run the blocking download in a separate thread so it doesn't block the event loop
-    result = await asyncio.to_thread(downloadvideo.startvideodownload, link)
-
-    completed_embed = embed.show_download_complete(result)
-
-    await message.edit(embed=completed_embed)
-
-@bot.tree.command(
-    name="shoot-and-kill-bot-grrrrr",
-    description="Take the bot out back and restart the app"
-)
-@commands.has_permissions(administrator=True)
-async def shoot_and_kill_bot_grrrrr(interaction: discord.Interaction):
-    await interaction.response.send_message("Restarting...")
-    await bot.close()
-    gitimport.restart_bot()
-
-@bot.tree.command(
-    name="send-konata-x-kagami",
-    description="Send a random konata x kagami image to chat from Danbooru!"
-)
-async def send_konata_x_kagami(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=False)
-    print("[main] Sending a random Lucky Star image from danbooru")
-    image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_USERNAME'), os.getenv('DANBOORU_API_KEY'))
-    if image_url: await interaction.followup.send(content=image_url)
-
-@bot.tree.command(
-    name="search-danbooru",
-    description="Search Danbooru with parameters and get a random image from the results"
-)
-@app_commands.describe(
-    query="""Search tags (eg: "izumi_konata hiiragi_kagami")""",
-    rating="Content rating"
-)
-@app_commands.choices(rating=[
-    app_commands.Choice(name="Safe", value="s"),
-    app_commands.Choice(name="Questionable", value="q"),
-    app_commands.Choice(name="Explicit", value="e")
-])
-async def search_danbooru(interaction: discord.Interaction, query: str, rating: app_commands.Choice[str] | None = None):
-    await interaction.response.defer(ephemeral=False)
-    rating_value = rating.value if rating else "s"
-    print(f"[main] Searching Danbooru with query: {query}, rating: {rating_value}")
-    image_url = await asyncio.to_thread(
-        danboorusearch.get_image_url,
-        os.getenv('DANBOORU_USERNAME'),
-        os.getenv('DANBOORU_API_KEY'),
-        query,
-        rating_value
-    )
-    if image_url: 
-        await interaction.followup.send(content=image_url)
-    else:
-        await interaction.followup.send(content="No images found for the specified query.")
-
-### ====== Test commands ======
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def sync_tree(ctx):
-    synced_list = await ctx.bot.tree.sync()
-    await ctx.send(f"Syncing {len(synced_list)} commands to all guilds")
-
-@bot.command()
-async def hi(ctx):
-    await ctx.send("Hi!!")
-
-@bot.command()
-async def k(ctx):
-    image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_USERNAME'), os.getenv('DANBOORU_API_KEY'))
-    if image_url: await ctx.send(image_url)
-
-@bot.command()
-async def pettan(ctx):
-    await ctx.send(file=discord.File("media/music/つるぺったん.mp3"))
-
-@bot.command()
-async def accentcolour(ctx):
-    hex_color, color_image = graphics.get_accent_colour(ctx.author)
-    embed_to_send, file = embed.show_accent_colour(hex_color, color_image)
-    await ctx.send(embed=embed_to_send, file=file)
-
 ### ====== Bot ======
 @bot.event
 async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES"))
+    
+    await bot.load_extension("cogs.video_cog")
+    await bot.load_extension("cogs.danbooru_cog")
+    await bot.load_extension("cogs.admin_cog")
+    await bot.load_extension("cogs.fun_cog")
+    
     check_commits.start()
     await check_commits()
     print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
@@ -217,77 +105,6 @@ async def on_message(message):
             await message.reply(new_link, mention_author=False)
 
     await bot.process_commands(message)  # Keep commands working
-
-def convert_links_to_embed(message):
-    new_message = message
-    converted = False
-
-    for original, embed_link in EMBED_LINKS:
-        pattern = re.compile(
-            rf"(https?://)?(www\.)?{re.escape(original)}(?=[/?#]|$)",
-            flags=re.IGNORECASE
-        )
-
-        def replace_domain(match, embed_link=embed_link):
-            scheme = match.group(1) or ""
-            return f"{scheme}{embed_link}"
-
-        new_message, num_subs = pattern.subn(replace_domain, new_message)
-        if num_subs:
-            converted = True
-
-    return new_message, converted
-
-async def convert_images_to_avif(message):
-    if not message.attachments:
-        return
-
-    original_text = message.content or ""
-
-    print(f"[main] Converting images in message to avif")
-
-    avif_files = []
-
-    for attachment in message.attachments:
-        # Only process image files
-        if not any(attachment.filename.lower().endswith(ext) for ext in ["png", "jpg", "jpeg", "bmp", "webp", "avif"]):
-            continue
-
-        # Download image
-        headers = {"User-Agent": "Mozilla/5.0"}
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(attachment.url) as resp:
-                if resp.status != 200:
-                    print("[main] Failed to download the image.")
-                    return
-                data = await resp.read()
-
-        os.makedirs("images", exist_ok=True)
-        local_path = os.path.join("images", attachment.filename)
-        with open(local_path, "wb") as f:
-            f.write(data)
-
-        # Convert to avif
-        img = Image.open(io.BytesIO(data))
-        avif_buffer = io.BytesIO()
-        img.save(avif_buffer, format="AVIF", quality=0)
-        avif_buffer.seek(0)
-
-        # Send new image
-        filename_no_ext = os.path.splitext(attachment.filename)[0]
-        avif_filename = f"{filename_no_ext}.avif"
-        avif_files.append(discord.File(fp=avif_buffer, filename=avif_filename))
-
-    if avif_files:
-        await message.channel.send(content=original_text, files=avif_files)
-        
-        try:
-            await message.delete()
-            print("[main] Original message deleted")
-        except discord.Forbidden:
-            print("[main] Missing permissions to delete the original message")
-        except discord.NotFound:
-            print("[main] Original message already deleted")
 
 @tasks.loop(minutes=1)
 async def check_commits():
