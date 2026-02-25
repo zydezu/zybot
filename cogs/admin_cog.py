@@ -18,8 +18,8 @@ class AdminCog(commands.Cog):
         description="Take the bot out back and restart the app"
     )
     @commands.has_permissions(administrator=True)
-    async def shoot_and_kill_bot_grrrrr(self, ctx):
-        await ctx.send("Restarting...")
+    async def shoot_and_kill_bot_grrrrr(self, interaction: discord.Interaction):
+        await interaction.response.send_message("Restarting...")
         await self.bot.close()
         gitimport.restart_bot()
 
