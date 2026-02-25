@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import scripts.gitimport as gitimport
 
 class AdminCog(commands.Cog):
@@ -12,7 +13,7 @@ class AdminCog(commands.Cog):
         synced_list = await ctx.bot.tree.sync()
         await ctx.send(f"Syncing {len(synced_list)} commands to all guilds")
 
-    @commands.command(
+    @app_commands.command(
         name="shoot-and-kill-bot-grrrrr",
         description="Take the bot out back and restart the app"
     )
