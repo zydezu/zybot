@@ -4,7 +4,7 @@ import scripts.artcounting as artcounting
 import scripts.commits as commits
 import os, random
 from config import (
-    TOKEN, ZYBOTID, COMMITS_CHANNEL_ID, 
+    TOKEN, ZYBOTID, COMMITS_CHANNEL_ID, SEND_GIT_COMMITS,
     LUCKYSTARLINESPATH, CHANNELS_TO_COUNT, URL_REGEX
 )
 from scripts.message_utils import convert_links_to_embed, convert_images_to_avif
@@ -111,12 +111,13 @@ async def on_message(message):
 
 @tasks.loop(minutes=1)
 async def check_commits():
-    channel = bot.get_channel(COMMITS_CHANNEL_ID)
+    if SEND_GIT_COMMITS:
+        channel = bot.get_channel(COMMITS_CHANNEL_ID)
 
-    new_commit_embeds = commits.check_commits(os.getenv('GITHUB_TOKEN'), os.getenv('GITHUB_USERNAME'))
+        new_commit_embeds = commits.check_commits(os.getenv('GITHUB_TOKEN'), os.getenv('GITHUB_USERNAME'))
 
-    for commit in new_commit_embeds:
-        await channel.send(embed=commit)
+        for commit in new_commit_embeds:
+            await channel.send(embed=commit)
 
 ### ====== Start bot ======
 def main():
