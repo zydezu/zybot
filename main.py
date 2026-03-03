@@ -132,7 +132,7 @@ async def check_commits():
 # ---------------
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def sync_tree(ctx):
+async def sync(ctx):
     """Sync the command tree to all guilds."""
     synced_list = await ctx.bot.tree.sync()
     await ctx.send(f"Syncing {len(synced_list)} commands to all guilds")
