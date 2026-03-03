@@ -137,6 +137,11 @@ async def sync_tree(ctx):
     synced_list = await ctx.bot.tree.sync()
     await ctx.send(f"Syncing {len(synced_list)} commands to all guilds")
 
+@bot.command()
+async def sync(ctx):
+    synced = await bot.tree.sync()
+    await ctx.send(f"Synced {len(synced)} commands globally.")
+
 ### ====== Start bot ======
 def main():
     bot.run(token=TOKEN)

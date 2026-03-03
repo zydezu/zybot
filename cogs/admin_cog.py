@@ -8,15 +8,6 @@ class AdminCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(
-        name="sync-tree",
-        description="Sync slash commands to all guilds"
-    )
-    @app_commands.default_permissions(administrator=True)
-    async def sync_tree(self, interaction: discord.Interaction):
-        synced_list = await self.bot.tree.sync()
-        await interaction.response.send_message(f"Synced {len(synced_list)} commands to all guilds")
-
-    @app_commands.command(
         name="shoot-and-kill-bot-grrrrr",
         description="Take the bot out back and restart the app"
     )
