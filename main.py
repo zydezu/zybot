@@ -133,7 +133,6 @@ async def check_commits():
 @bot.command()
 async def sync_tree(ctx):
     synced = await bot.tree.sync()
-    print(await bot.tree.fetch_commands())
     await ctx.send(f"Synced {synced} - {len(synced)} commands globally.")
 
 ### ====== Start bot ======
