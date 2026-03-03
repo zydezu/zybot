@@ -124,6 +124,16 @@ async def check_commits():
         for commit in new_commit_embeds:
             await channel.send(embed=commit)
 
+# ---------------
+# SYNC TREE
+# ---------------
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def sync_tree(ctx):
+    """Sync the command tree to all guilds."""
+    synced_list = await ctx.bot.tree.sync()
+    await ctx.send(f"Syncing {len(synced_list)} commands to all guilds")
+
 ### ====== Start bot ======
 def main():
     bot.run(token=TOKEN)
