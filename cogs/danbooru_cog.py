@@ -9,11 +9,15 @@ class DanbooruCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def is_dm(self, interaction: discord.Interaction) -> bool:
+        return isinstance(interaction.channel, discord.DMChannel)
+
     @app_commands.command(
         name="send-konata-x-kagami",
         description="Send a random konata x kagami image to chat from Danbooru!"
     )
     async def send_konata_x_kagami(self, interaction: discord.Interaction):
+        is_dm = isinstance(interaction.channel, discord.DMChannel)
         await interaction.response.defer(ephemeral=False)
         print("[main] Sending a random Lucky Star image from danbooru")
         image_url = danboorusearch.get_image_url(
@@ -42,6 +46,7 @@ class DanbooruCog(commands.Cog):
         query: str, 
         rating: app_commands.Choice[str] | None = None
     ):
+        is_dm = self.is_dm(interaction)
         await interaction.response.defer(ephemeral=False)
         rating_value = rating.value if rating else "s"
         print(f"[main] Searching Danbooru with query: {query}, rating: {rating_value}")

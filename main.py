@@ -38,6 +38,9 @@ async def on_ready():
     await bot.load_extension("cogs.danbooru_cog")
     await bot.load_extension("cogs.admin_cog")
     await bot.load_extension("cogs.fun_cog")
+    
+    await bot.tree.sync()
+    print("[main] Synced commands globally")
         
     check_commits.start()
     await check_commits()
