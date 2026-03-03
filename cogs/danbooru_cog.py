@@ -8,16 +8,12 @@ import scripts.danboorusearch as danboorusearch
 class DanbooruCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.tree.allowed_contexts = app_commands.AppCommandContext(
-            guild=True,
-            dm_channel=True,
-            private_channel=True
-        )
 
     @app_commands.command(
         name="send-konata-x-kagami",
         description="Send a random konata x kagami image to chat from Danbooru!"
     )
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def send_konata_x_kagami(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
         print("[main] Sending a random Lucky Star image from danbooru")
@@ -41,6 +37,7 @@ class DanbooruCog(commands.Cog):
         app_commands.Choice(name="Questionable", value="q"),
         app_commands.Choice(name="Explicit", value="e")
     ])
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def search_danbooru(
         self, 
         interaction: discord.Interaction, 
