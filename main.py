@@ -135,6 +135,7 @@ async def check_commits():
 async def sync(ctx):
     """Sync the command tree to all guilds."""
     synced_list = await ctx.bot.tree.sync()
+    print(await bot.tree.fetch_commands())
     await ctx.send(f"Syncing {len(synced_list)} commands to all guilds")
 
 @bot.command()
