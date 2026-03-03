@@ -7,11 +7,14 @@ class AdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def sync_tree(self, ctx):
-        synced_list = await ctx.bot.tree.sync()
-        await ctx.send(f"Syncing {len(synced_list)} commands to all guilds")
+    @app_commands.command(
+        name="sync-tree",
+        description="Sync slash commands to all guilds"
+    )
+    @app_commands.default_permissions(administrator=True)
+    async def sync_tree(self, interaction: discord.Interaction):
+        synced_list = await self.bot.tree.sync()
+        await interaction.response.send_message(f"Synced {len(synced_list)} commands to all guilds")
 
     @app_commands.command(
         name="shoot-and-kill-bot-grrrrr",

@@ -38,10 +38,15 @@ async def on_ready():
     await bot.load_extension("cogs.danbooru_cog")
     await bot.load_extension("cogs.admin_cog")
     await bot.load_extension("cogs.fun_cog")
-    
+        
     check_commits.start()
     await check_commits()
     print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
+
+@bot.event
+async def on_guild_join(guild):
+    await bot.tree.sync(guild=guild)
+    print(f"[main] Synced commands for new guild: {guild.name} (ID: {guild.id})")
 
 @bot.event
 async def on_message(message):
