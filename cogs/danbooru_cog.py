@@ -11,7 +11,8 @@ class DanbooruCog(commands.Cog):
 
     @app_commands.command(
         name="send-konata-x-kagami",
-        description="Send a random konata x kagami image to chat from Danbooru!"
+        description="Send a random konata x kagami image to chat from Danbooru!",
+        dm_usage=True
     )
     async def send_konata_x_kagami(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
@@ -25,7 +26,8 @@ class DanbooruCog(commands.Cog):
 
     @app_commands.command(
         name="search-danbooru",
-        description="Search Danbooru with parameters and get a random image from the results"
+        description="Search Danbooru with parameters and get a random image from the results",
+        dm_usage=True
     )
     @app_commands.describe(
         query="""Search tags (eg: "izumi_konata hiiragi_kagami")""",
