@@ -7,6 +7,5 @@ videos/downloads
 listofvideos.txt
 *.json
 .env
-todo.txt
 seencommits.txt
 *.log

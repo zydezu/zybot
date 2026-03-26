@@ -1,0 +1,5 @@
+- Aigis searching - Use 'tags' - store messages in a table with LLM-relevant tags for better search than Discord
+- My own archival service (custom code? e.g., for Twitter?), integrate with Aigis!
+- Add /dictionary command to Aigis, like Wikipedia, Wiktionary or Urban Dictionary
+- Improve Aigis Danbooru
+- Server relationships graph** - Visualize relationships between servers/users (could use network graph)

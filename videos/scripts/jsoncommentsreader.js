@@ -4,8 +4,10 @@ const selectedFile = document.getElementById("selectedFile");
 const filterButtons = document.getElementById("filterButtons");
 const sortingButton = document.getElementById("sortingButton");
 const toggleRepliesButton = document.getElementById("toggleReplies");
-const switchCommentsLayoutButton = document.getElementById("switchCommentsLayoutButton");
-const scrollingPlace = document.getElementById("sideBarScroll")
+const switchCommentsLayoutButton = document.getElementById(
+    "switchCommentsLayoutButton",
+);
+const scrollingPlace = document.getElementById("sideBarScroll");
 let sortedByTop;
 let showingReplies;
 resetButtonStates();
@@ -26,16 +28,23 @@ function getCommentsBox() {
     if (!localStorage.commentPosition) {
         localStorage.setItem("commentPosition", "side");
     }
-    oldCommentPosition = localStorage.commentPosition == "classic" ? true : false;
-    commentsBox = document.getElementById(oldCommentPosition ? "classicCommentsBox" : "commentsBox");
-    commentCount = document.getElementById(oldCommentPosition ? "classicCommentCount" : "commentCount");
+    oldCommentPosition =
+        localStorage.commentPosition == "classic" ? true : false;
+    commentsBox = document.getElementById(
+        oldCommentPosition ? "classicCommentsBox" : "commentsBox",
+    );
+    commentCount = document.getElementById(
+        oldCommentPosition ? "classicCommentCount" : "commentCount",
+    );
 }
 
 function resetButtonStates() {
     sortedByTop = false;
     showingReplies = true;
     sortingButton.textContent = "Sort by top";
-    toggleRepliesButton.innerHTML = showingReplies ? "Hide replies" : "Show replies";
+    toggleRepliesButton.innerHTML = showingReplies
+        ? "Hide replies"
+        : "Show replies";
 }
 
 function switchCommentsLayout() {
@@ -43,7 +52,10 @@ function switchCommentsLayout() {
     commentsBox.innerHTML = "";
     commentCount.innerHTML = "";
     oldCommentPosition = 1 - oldCommentPosition;
-    localStorage.setItem("commentPosition", oldCommentPosition == 0 ? "side" : "classic");
+    localStorage.setItem(
+        "commentPosition",
+        oldCommentPosition == 0 ? "side" : "classic",
+    );
     getCommentsBox();
     commentsBox.innerHTML = temp[0];
     commentCount.innerHTML = temp[1];
@@ -52,28 +64,32 @@ function switchCommentsLayout() {
 }
 
 function openFile() {
-    document.getElementById('getFile').click()
+    document.getElementById("getFile").click();
 }
 
 function readFile(file) {
     return new Promise((resolve, reject) => {
         let fr = new FileReader();
-        fr.onload = x => resolve(fr.result);
+        fr.onload = (x) => resolve(fr.result);
         fr.readAsText(file);
-    })
+    });
 }
 
 function formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+    return (
+        parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + " " + sizes[i]
+    );
 }
 
 async function getDislikes(id) {
     try {
-        const response = await fetch("https://returnyoutubedislikeapi.com/votes?videoId=" + id);
+        const response = await fetch(
+            "https://returnyoutubedislikeapi.com/votes?videoId=" + id,
+        );
         if (!response.ok) {
             throw new Error("Network response was not ok");
         }
@@ -90,9 +106,9 @@ async function getDislikes(id) {
 }
 
 function fetchError(error) {
-    console.log(error)
+    console.log(error);
     errorMessage = error;
-    renderCommentCount()
+    renderCommentCount();
 }
 
 function readFile(input) {
@@ -116,7 +132,8 @@ function readFile(input) {
             console.error("Fetch error:", error);
             fetchError(error);
             // Fallback to a local file or display a message
-            videoInfo.innerHTML = "Failed to load information. Please check your connection or the file path.";
+            videoInfo.innerHTML =
+                "Failed to load information. Please check your connection or the file path.";
         });
 }
 
@@ -125,24 +142,24 @@ async function read(returndata) {
     resetButtonStates();
 
     loadedSuccessfully = true;
-    console.log("Loading comments...")
+    console.log("Loading comments...");
 
-    commentCount.innerHTML = `${oldCommentPosition ? `<br/>` : ``} Loading comments... 
+    commentCount.innerHTML = `${oldCommentPosition ? `<br/>` : ``} Loading comments...
     <button class="switchCommentsLayout" onclick="switchCommentsLayout()">Switch comment layout</button>`;
     commentsBox.innerHTML = "";
 
     videoInfo.innerHTML = `
         <hr>
-        <a target="_blank" href="https://youtube.com/watch?v=${data.id}">${data.fulltitle}</a> | 
+        <a target="_blank" href="https://youtube.com/watch?v=${data.id}">${data.fulltitle}</a> |
         <a href="videos/video.mp4" download="${data.fulltitle}.mp4">Download Video</a><br/>
         Views: ${data.view_count} | Duration: ${data.duration_string}
         <br/>Uploaded by: <a target="_blank" href="${data.uploader_url}">${data.channel} (${data.uploader_id})</a> | ${data.channel_follower_count} subscribers
-        <br/>Uploaded: ${data.upload_date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')}
+        <br/>Uploaded: ${data.upload_date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")}
         <br/>Likes: ${data.like_count} | Dislikes: <span id="dislikeCounter">Loading...</span> | Comments: ${data.comment_count}
         <br/>Categories: ${data.categories}
         <br/>Tags: ${data.tags}
         <hr>
-        ${makeLinks(data.description.replace(/\n/g, '<br>'))}
+        ${makeLinks(data.description.replace(/\n/g, "<br>"))}
         <hr>
         `;
 
@@ -156,14 +173,15 @@ async function read(returndata) {
 }
 
 function makeLinks(content) {
-    var re = /((?:href|src)=")?(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    var re =
+        /((?:href|src)=")?(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
     content = content.replace(re, function (match, attr) {
-        if (typeof attr != 'undefined') {
+        if (typeof attr != "undefined") {
             return match;
         }
-        return '<a target="_blank" href="' + match + '">' + match + '</a>';
+        return '<a target="_blank" href="' + match + '">' + match + "</a>";
     });
-    return content
+    return content;
 }
 
 function noCommentsMessage() {
@@ -172,11 +190,11 @@ function noCommentsMessage() {
 }
 
 async function renderComments() {
-    commentsBox.innerHTML = ''
+    commentsBox.innerHTML = "";
     const fragment = document.createDocumentFragment();
-    showingReplies = true
+    showingReplies = true;
 
-    startingIndex = 0
+    startingIndex = 0;
     allCommentsLoaded = true;
     for (let index = startingIndex; index < data.comments.length; index++) {
         if (index >= startingIndex + commentsToLoadInitially) {
@@ -185,7 +203,7 @@ async function renderComments() {
             break;
         }
         commentsLoaded = index;
-        renderNextComment(fragment, index)
+        renderNextComment(fragment, index);
     }
     commentsBox.appendChild(fragment);
     renderCommentCount();
@@ -204,7 +222,7 @@ function renderCommentCount() {
 }
 
 async function loadMoreComments() {
-    console.log("Loading more comments.")
+    console.log("Loading more comments.");
     const fragment = document.createDocumentFragment();
 
     allCommentsLoaded = true;
@@ -227,7 +245,10 @@ scrollingPlace.addEventListener("scroll", () => {
 
 function sideBoxCheckNewComments() {
     if (!allCommentsLoaded) {
-        if (scrollingPlace.scrollHeight - scrollingPlace.scrollTop <= scrollingPlace.clientHeight + 1000) {
+        if (
+            scrollingPlace.scrollHeight - scrollingPlace.scrollTop <=
+            scrollingPlace.clientHeight + 1000
+        ) {
             loadMoreComments();
         }
     }
@@ -235,8 +256,14 @@ function sideBoxCheckNewComments() {
 
 window.onscroll = function (ev) {
     if (loadedSuccessfully) {
-        if ((oldCommentPosition || window.innerWidth < 950) && !allCommentsLoaded) {
-            if ((window.innerHeight + window.scrollY) >= document.body.scrollHeight - 1000) {
+        if (
+            (oldCommentPosition || window.innerWidth < 950) &&
+            !allCommentsLoaded
+        ) {
+            if (
+                window.innerHeight + window.scrollY >=
+                document.body.scrollHeight - 1000
+            ) {
                 loadMoreComments();
             }
         }
@@ -246,23 +273,24 @@ window.onscroll = function (ev) {
 function loadAllComments() {
     const fragment = document.createDocumentFragment();
     for (let index = startingIndex; index < data.comments.length; index++) {
-        renderNextComment(fragment, index)
+        renderNextComment(fragment, index);
     }
     commentsBox.appendChild(fragment);
     filterComments(currentFilter);
     commentsLoaded = data.comments.length;
     allCommentsLoaded = true;
     updateSettingsBox();
-};
+}
 
 function renderNextComment(fragment, index) {
     const element = data.comments[index];
-    const commentDiv = document.createElement('div');
+    const commentDiv = document.createElement("div");
     commentDiv.id = element.id;
 
-    if (element.text) { // rarely a comment won't contain text
+    if (element.text) {
+        // rarely a comment won't contain text
         if (element.parent === "root") {
-            commentDiv.classList.add('SNSParent');
+            commentDiv.classList.add("SNSParent");
             commentDiv.innerHTML = `
                     <div class="SNSPost">
                         <div class="SNSArea"><a target="_blank" href="${element.author_url}"><img class="SNSIcon" onload="this.style.opacity=1" src="${element.author_thumbnail}"></a>
@@ -278,9 +306,9 @@ function renderNextComment(fragment, index) {
                             </div>
                         </div>
                         <div class="SNSPostText">
-                            ${makeLinks(element.text.trim().replace(/\n/g, '<br>'))}<br/>
+                            ${makeLinks(element.text.trim().replace(/\n/g, "<br>"))}<br/>
                             <div class="SNSExtraInfo">
-                            <span class="SNSLikeCount">${element.like_count ? element.like_count : 0}</span> like${element.like_count != 1 ? `s` : ``} | 
+                            <span class="SNSLikeCount">${element.like_count ? element.like_count : 0}</span> like${element.like_count != 1 ? `s` : ``} |
                                 <span id="${element.id}replycount">0 replies</span> |
                                 <a target="_blank" href="https://youtube.com/watch?v=${data.id}&lc=${element.id}">Open</a>
                             </div>
@@ -290,7 +318,7 @@ function renderNextComment(fragment, index) {
                     `;
             fragment.appendChild(commentDiv);
         } else {
-            commentDiv.classList.add('SNSPost');
+            commentDiv.classList.add("SNSPost");
             commentDiv.innerHTML = `
                     <div class="SNSArea"><a target="_blank" href="${element.author_url}"><img class="SNSIcon" onload="this.style.opacity=1" src="${element.author_thumbnail}"></a>
                         <div class="SNSUserInfo">
@@ -304,43 +332,55 @@ function renderNextComment(fragment, index) {
                         </div>
                     </div>
                     <div class="SNSPostText">
-                        ${makeLinks(element.text.trim().replace(/\n/g, '<br>'))}
+                        ${makeLinks(element.text.trim().replace(/\n/g, "<br>"))}
                         <div class="SNSExtraInfo">
-                            <span class="SNSLikeCount">${element.like_count ? element.like_count : 0}</span> like${element.like_count != 1 ? `s` : ``} | 
+                            <span class="SNSLikeCount">${element.like_count ? element.like_count : 0}</span> like${element.like_count != 1 ? `s` : ``} |
                             <a target="_blank" href="https://youtube.com/watch?v=${data.id}&lc=${element.id}">Open</a>
                         </div>
                     </div>
                     `;
             try {
-                const replyID = fragment.getElementById(`${element.parent}reply`)
-                const replyCount = fragment.getElementById(`${element.parent}replycount`)
-                let newReplyCount = parseInt(replyCount.innerHTML.split(" ")[0]) + 1
-                replyCount.innerText = `${newReplyCount} repl${newReplyCount == 1 ? `y` : `ies`}`
-                fragment.getElementById(`${element.parent}reply`).appendChild(commentDiv);
+                const replyID = fragment.getElementById(
+                    `${element.parent}reply`,
+                );
+                const replyCount = fragment.getElementById(
+                    `${element.parent}replycount`,
+                );
+                let newReplyCount =
+                    parseInt(replyCount.innerHTML.split(" ")[0]) + 1;
+                replyCount.innerText = `${newReplyCount} repl${newReplyCount == 1 ? `y` : `ies`}`;
+                fragment
+                    .getElementById(`${element.parent}reply`)
+                    .appendChild(commentDiv);
             } catch (error) {
                 // reply comment not in fragment - use global
-                document.getElementById(`${element.parent}reply`).appendChild(commentDiv);
+                document
+                    .getElementById(`${element.parent}reply`)
+                    .appendChild(commentDiv);
             }
         }
     }
 
     commentsLoaded++;
 
-    if (element.is_pinned) commentDiv.dataset.info = "Pinned "
+    if (element.is_pinned) commentDiv.dataset.info = "Pinned ";
     if (element.is_favorited) {
         if (commentDiv.dataset.info) {
-            commentDiv.dataset.info += "Liked "
+            commentDiv.dataset.info += "Liked ";
         } else {
-            commentDiv.dataset.info = "Liked "
+            commentDiv.dataset.info = "Liked ";
         }
     }
-};
+}
 
 function filterComments(filterBy) {
-    currentFilter = filterBy
+    currentFilter = filterBy;
     let visibleCount = 0;
     for (const element of commentsBox.children) {
-        const hasFilter = filterBy && element.dataset.info && element.dataset.info.includes(filterBy);
+        const hasFilter =
+            filterBy &&
+            element.dataset.info &&
+            element.dataset.info.includes(filterBy);
         const isVisible = !filterBy || hasFilter;
         element.classList.toggle("hidden", !isVisible);
         if (isVisible) {
@@ -352,10 +392,10 @@ function filterComments(filterBy) {
         commentCount.innerHTML = `Comments: ${data.comment_count} ${filterBy ? `(Showing: ${visibleCount})` : ""}
         <button class="switchCommentsLayout" onclick="switchCommentsLayout()">Switch comment layout</button>`;
     }
-};
+}
 
 function switchSorting() {
-    scrollingPlace.scrollTo(0, 0)
+    scrollingPlace.scrollTo(0, 0);
     if (sortedByTop) {
         sortedByTop = false;
         sortingButton.textContent = "Sort by top";
@@ -363,22 +403,24 @@ function switchSorting() {
         return;
     }
     loadAllComments();
-    console.log("Loaded all comments")
+    console.log("Loaded all comments");
     filterComments();
     sortedByTop = true;
     sortingButton.textContent = "Sort by new";
-    const divList = Array.from(commentsBox.querySelectorAll('.SNSParent'))
+    const divList = Array.from(commentsBox.querySelectorAll(".SNSParent"))
         .map((div) => {
-            const likes = parseInt(div.querySelector('.SNSLikeCount').innerText.trim());
-            const text = div.querySelector('.SNSPostText').innerText.trim();
+            const likes = parseInt(
+                div.querySelector(".SNSLikeCount").innerText.trim(),
+            );
+            const text = div.querySelector(".SNSPostText").innerText.trim();
             return { likes, text, div };
         })
         .sort((a, b) => b.likes - a.likes);
-    commentsBox.innerHTML = ""
+    commentsBox.innerHTML = "";
     divList.forEach((entry) => {
         commentsBox.appendChild(entry.div);
     });
-};
+}
 
 function toggleReplies() {
     for (const element of commentsBox.children) {
@@ -388,8 +430,10 @@ function toggleReplies() {
         }
     }
     showingReplies = !showingReplies;
-    toggleRepliesButton.innerHTML = showingReplies ? "Hide replies" : "Show replies";
-};
+    toggleRepliesButton.innerHTML = showingReplies
+        ? "Hide replies"
+        : "Show replies";
+}
 
 // video loading
 const video = document.getElementById("ambientvideo");
@@ -400,7 +444,7 @@ let droppingFrames = false;
 let droppedFrames = 0;
 let totalFrames = 0;
 let forgiveFrames = 0;
-video.addEventListener('timeupdate', () => {
+video.addEventListener("timeupdate", () => {
     droppedFrames = video.getVideoPlaybackQuality().droppedVideoFrames;
     totalFrames = video.getVideoPlaybackQuality().totalVideoFrames;
     if (droppedFrames > lastDroppedFrames) {
@@ -413,10 +457,10 @@ video.addEventListener('timeupdate', () => {
     } else {
         droppingFrames = false;
     }
-})
+});
 
 async function getComments() {
-    let idpath = "videos/video.info.json"
+    let idpath = "videos/video.info.json";
     await readFile(idpath);
 }
 
@@ -441,11 +485,11 @@ function viewSettings() {
     }
     showingSettings = 1 - showingSettings;
     return showingSettings;
-};
+}
 
 function updateSettingsBox() {
     const ambCanvas = document.getElementById("ambientcanvas");
-    var style = getComputedStyle(document.body)
+    var style = getComputedStyle(document.body);
     try {
         settingsBoxJS.innerHTML = `
         <div class="settingSubheading">Apperance</div><hr />
@@ -467,27 +511,27 @@ function updateSettingsBox() {
         <span class="settingsExtraInfo">(this will reload the page)</span></div><br />
 
         <div class="settingSubheading">Debug</div><hr />
-        View video JSON file<a target="_blank" href="${video.src.substr(0, video.src.lastIndexOf('.')) + ".info.json"}" class="settingsOption">View</a><br />
+        View video JSON file<a target="_blank" href="${video.src.substr(0, video.src.lastIndexOf(".")) + ".info.json"}" class="settingsOption">View</a><br />
         Comments loaded<span class="settingsOption">${commentsLoaded}</span><br />
         Video resolution<span class="settingsOption">${video.videoWidth}x${video.videoHeight}</span><br />
         Dropped frames<span class="settingsOption">${droppedFrames}/${totalFrames}</span>
         <span class="settingsExtraInfo">(doesn't update when in this menu)</span><br />
         Ambient width / height<span class="settingsOption">${ambCanvas.width}/${ambCanvas.height}</span><br />
         Ambient blur<span class="settingsOption">${canvas.ctx.filter}</span><br />
-        Ambient opacity<span class="settingsOption">${style.getPropertyValue('--ambient-canvas-opacity')}</span><br />
-        Ambient saturation<span class="settingsOption">${style.getPropertyValue('--ambient-saturation')}</span><br />
+        Ambient opacity<span class="settingsOption">${style.getPropertyValue("--ambient-canvas-opacity")}</span><br />
+        Ambient saturation<span class="settingsOption">${style.getPropertyValue("--ambient-saturation")}</span><br />
         Fullscreen ambient mode<a href="javascript:void(0)" class="settingsOption">OFF</a>
         <span class="settingsExtraInfo">(not implemented)</span><br />
-    `
+    `;
     } catch (error) {
-        settingsBoxJS.innerHTML = `<br/>Failed to load<br/>${error}`
+        settingsBoxJS.innerHTML = `<br/>Failed to load<br/>${error}`;
     }
-};
+}
 
 clearLocalStorage = () => {
     localStorage.clear();
     location.reload();
-}
+};
 
 // header transparency
 
@@ -495,9 +539,8 @@ var header = document.getElementById("navBar");
 var sticky = 5;
 document.addEventListener("scroll", () => {
     if (window.scrollY > sticky) {
-        header.classList.add("solid")
+        header.classList.add("solid");
+    } else {
+        header.classList.remove("solid");
     }
-    else {
-        header.classList.remove("solid")
-    };
 });
