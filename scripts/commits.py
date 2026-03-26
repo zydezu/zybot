@@ -1,8 +1,11 @@
+import os
+
+import requests
+
 import embed
-import requests, os
-from dotenv import load_dotenv
 
 SEEN_FILE = "data/seencommits.txt"
+
 
 def load_seen_shas():
     if not os.path.exists(SEEN_FILE):
@@ -10,14 +13,17 @@ def load_seen_shas():
     with open(SEEN_FILE, "r") as f:
         return set(line.strip() for line in f.readlines())
 
+
 def save_seen_shas(shas):
     with open(SEEN_FILE, "w") as f:
         for sha in shas:
             f.write(f"{sha}\n")
 
+
 def get_repos(github_username, headers):
     url = f"https://api.github.com/users/{github_username}/repos"
     return requests.get(url, headers=headers).json()
+
 
 def get_commits(github_username, repo_name, headers):
     url = f"https://api.github.com/repos/{github_username}/{repo_name}/commits"
@@ -26,15 +32,18 @@ def get_commits(github_username, repo_name, headers):
     result = []
     if isinstance(commits, list):
         for commit in commits:
-            result.append({
-                "repo": repo_name,
-                "sha": commit["sha"],
-                "author": commit["commit"]["author"]["name"],
-                "message": commit["commit"]["message"],
-                "url": commit["html_url"],
-                "date": commit["commit"]["author"]["date"]
-            })
+            result.append(
+                {
+                    "repo": repo_name,
+                    "sha": commit["sha"],
+                    "author": commit["commit"]["author"]["name"],
+                    "message": commit["commit"]["message"],
+                    "url": commit["html_url"],
+                    "date": commit["commit"]["author"]["date"],
+                }
+            )
     return result
+
 
 def get_commit_stats(github_username, repo_name, sha, headers):
     url = f"https://api.github.com/repos/{github_username}/{repo_name}/commits/{sha}"
@@ -43,11 +52,18 @@ def get_commit_stats(github_username, repo_name, sha, headers):
         return None, None, None
     data = response.json()
     stats = data.get("stats", {})
-    return stats.get("additions", 0), stats.get("deletions", 0), data.get("changed_files", 0)
+    return (
+        stats.get("additions", 0),
+        stats.get("deletions", 0),
+        data.get("changed_files", 0),
+    )
+
 
 def get_org_repos(github_token, github_username, headers):
-    orgs = requests.get(f"https://api.github.com/users/{github_username}/orgs", headers=headers).json()
-    
+    orgs = requests.get(
+        f"https://api.github.com/users/{github_username}/orgs", headers=headers
+    ).json()
+
     org_repos_data = []
 
     for org in orgs:
@@ -56,6 +72,7 @@ def get_org_repos(github_token, github_username, headers):
         org_repos_data.extend(orgs_repos)
 
     return org_repos_data
+
 
 def check_commits(github_token, github_username):
     headers = {"Authorization": f"token {github_token}"} if github_token else {}
@@ -72,41 +89,50 @@ def check_commits(github_token, github_username):
         for commit in commits:
             sha = commit["sha"]
             if sha not in seen_shas:
-                additions, deletions, changed_files = get_commit_stats(github_username, repo_name, sha, headers)
-                new_commit_dicts.append({
-                    "repo": commit['repo'],
-                    "author": commit['author'],
-                    "author_avatar_url": repo["owner"]["avatar_url"],
-                    "message": commit['message'],
-                    "date": commit['date'],
-                    "url": commit['url'],
-                    "additions": additions,
-                    "deletions": deletions,
-                    "changed_files": changed_files,
-                })
+                additions, deletions, changed_files = get_commit_stats(
+                    github_username, repo_name, sha, headers
+                )
+                new_commit_dicts.append(
+                    {
+                        "repo": commit["repo"],
+                        "author": commit["author"],
+                        "author_avatar_url": repo["owner"]["avatar_url"],
+                        "message": commit["message"],
+                        "date": commit["date"],
+                        "url": commit["url"],
+                        "additions": additions,
+                        "deletions": deletions,
+                        "changed_files": changed_files,
+                    }
+                )
                 new_shas.add(sha)
 
     extra_repos = get_org_repos(github_token, github_username, headers)
 
     for repo in extra_repos:
         repo_name = repo["name"]
-        if (repo_name == ".github"): continue
+        if repo_name == ".github":
+            continue
         commits = get_commits(repo["owner"]["login"], repo_name, headers)
         for commit in commits:
             sha = commit["sha"]
             if sha not in seen_shas:
-                additions, deletions, changed_files = get_commit_stats(repo["owner"]["login"], repo_name, sha, headers)
-                new_commit_dicts.append({
-                    "repo": commit['repo'],
-                    "author": commit['author'],
-                    "author_avatar_url": repo["owner"]["avatar_url"],
-                    "message": commit['message'],
-                    "date": commit['date'],
-                    "url": commit['url'],
-                    "additions": additions,
-                    "deletions": deletions,
-                    "changed_files": changed_files,
-                })
+                additions, deletions, changed_files = get_commit_stats(
+                    repo["owner"]["login"], repo_name, sha, headers
+                )
+                new_commit_dicts.append(
+                    {
+                        "repo": commit["repo"],
+                        "author": commit["author"],
+                        "author_avatar_url": repo["owner"]["avatar_url"],
+                        "message": commit["message"],
+                        "date": commit["date"],
+                        "url": commit["url"],
+                        "additions": additions,
+                        "deletions": deletions,
+                        "changed_files": changed_files,
+                    }
+                )
                 new_shas.add(sha)
 
     save_seen_shas(new_shas)
@@ -114,7 +140,16 @@ def check_commits(github_token, github_username):
     new_commit_dicts.sort(key=lambda c: c["date"])
 
     new_commits = [
-        embed.show_new_commit(c['repo'], c['author'], c['author_avatar_url'], c['message'], c['date'], c['url'], c.get('additions'), c.get('deletions'))
+        embed.show_new_commit(
+            c["repo"],
+            c["author"],
+            c["author_avatar_url"],
+            c["message"],
+            c["date"],
+            c["url"],
+            c.get("additions"),
+            c.get("deletions"),
+        )
         for c in new_commit_dicts
     ]
 

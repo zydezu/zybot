@@ -1,13 +1,18 @@
 import requests
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor
-from collections import Counter
+from PIL import Image
 
 DEFAULT_AVATAR_PATH = "media/pictures/defaultavatar.png"
 
+
 def get_accent_colour(user):
-    useravatarimage = Image.open(requests.get(user.avatar, stream=True).raw) if user else Image.open(DEFAULT_AVATAR_PATH)
+    useravatarimage = (
+        Image.open(requests.get(user.avatar, stream=True).raw)
+        if user
+        else Image.open(DEFAULT_AVATAR_PATH)
+    )
     rgb, hex_color, color_image = get_accent_color(useravatarimage)
     return hex_color, color_image
+
 
 def rgb_to_hsv(rgb):
     r, g, b = rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0
@@ -29,6 +34,7 @@ def rgb_to_hsv(rgb):
 
     return h, s, v
 
+
 def get_color_score(rgb):
     h, s, v = rgb_to_hsv(rgb)
     luminance = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
@@ -40,13 +46,14 @@ def get_color_score(rgb):
         return 0
     return s * (1 - abs(v - 50) / 50)
 
+
 def get_accent_color(image):
-    image = image.resize((50, 50)).convert('RGB')
+    image = image.resize((50, 50)).convert("RGB")
     pixels = list(image.getdata())
 
     if not pixels:
         default_hex = "#bc0839"
-        default_image = Image.new('RGB', (50, 50), default_hex)
+        default_image = Image.new("RGB", (50, 50), default_hex)
         return (188, 8, 57), default_hex, default_image
 
     color_scores = {}
@@ -57,11 +64,11 @@ def get_accent_color(image):
 
     if not color_scores:
         default_hex = "#bc0839"
-        default_image = Image.new('RGB', (50, 50), default_hex)
+        default_image = Image.new("RGB", (50, 50), default_hex)
         return (188, 8, 57), default_hex, default_image
 
     most_common_color = max(color_scores, key=color_scores.get)
     hex_color = "#{:02x}{:02x}{:02x}".format(*most_common_color)
-    color_image = Image.new('RGB', (50, 50), hex_color)
+    color_image = Image.new("RGB", (50, 50), hex_color)
 
     return most_common_color, hex_color, color_image

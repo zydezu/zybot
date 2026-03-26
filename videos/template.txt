@@ -21,7 +21,7 @@
         <div class="navText">
             {videotitle} |
             <a href="javascript:void(0)" onclick="clickChangeTheme()">Toggle theme</a> |
-            <a href="javascript:void(0)" onclick="viewSettings()">Settings</a>    
+            <a href="javascript:void(0)" onclick="viewSettings()">Settings</a>
         </div>
     </div>
 
@@ -32,8 +32,8 @@
             </section>
             <video src="videos/{filename}" type="video/mp4" poster="videos/{icon}" controls playsinline
                 class="mainVideo roundVideo" id="ambientvideo"></video>
-            
-            <div class="underVideoStats">    
+
+            <div class="underVideoStats">
                 <div id="videoInfo"></div>
                 <div id="filterButtons" class="hidden">
                     <button onclick="filterComments('Liked')">Filter comments by 💖liked</button>
@@ -46,7 +46,7 @@
                 <div class="commentsArea">
                     <div id="classicCommentCount"></div>
                     <div id="classicCommentsBox"></div><br>
-                </div>    
+                </div>
             </div>
         </div>
         <div class="sideBar" id="sideBarScroll">

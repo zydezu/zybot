@@ -1,16 +1,18 @@
 import json
 
-ARTCOUNT = 'data/sentartcount.json'
+ARTCOUNT = "data/sentartcount.json"
+
 
 def get_user_artcount_json():
     try:
-        with open(ARTCOUNT, 'r') as file:
+        with open(ARTCOUNT, "r") as file:
             artcount_data = json.load(file)
         return artcount_data
     except FileNotFoundError:
         return {}
-    
-def increment_user_artcount(user_id : int, key : str):
+
+
+def increment_user_artcount(user_id: int, key: str):
     user_artcount_data = get_user_artcount_json()
 
     user_id = str(user_id)
@@ -21,10 +23,11 @@ def increment_user_artcount(user_id : int, key : str):
     try:
         user_artcount_data[user_id][key] += 1
         print(f"[artcounting] +1 {key} to {user_id}")
-    except:
+    except Exception as e:
+        print(f"[artcounting] error: {e}")
         return False
 
-    with open(ARTCOUNT, 'w') as file:
+    with open(ARTCOUNT, "w") as file:
         json.dump(user_artcount_data, file, indent=4)
 
     return True

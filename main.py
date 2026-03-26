@@ -1,23 +1,31 @@
-import scripts.llm as llm
-import scripts.danboorusearch as danboorusearch
+import hashlib
+import os
+import random
+from multiprocessing import freeze_support
+
+import discord
+from discord import app_commands
+from discord.ext import commands, tasks
+from PIL import Image
+
 import scripts.artcounting as artcounting
 import scripts.commits as commits
-import os, random
+import scripts.danboorusearch as danboorusearch
+import scripts.llm as llm
 from config import (
-    TOKEN, ZYBOTID, COMMITS_CHANNEL_ID, SEND_GIT_COMMITS,
-    LUCKYSTARLINESPATH, CHANNELS_TO_COUNT, URL_REGEX
+    CHANNELS_TO_COUNT,
+    COMMITS_CHANNEL_ID,
+    LUCKYSTARLINESPATH,
+    SEND_GIT_COMMITS,
+    TOKEN,
+    URL_REGEX,
+    ZYBOTID,
 )
-from scripts.message_utils import convert_links_to_embed, convert_images_to_avif
-from multiprocessing import freeze_support
-from PIL import Image
-from discord.ext import tasks, commands
-from discord import app_commands
-import discord
-
-os.system("") # Needed for message to have colour in the terminal
+from scripts.message_utils import convert_images_to_avif, convert_links_to_embed
 
 conversation_context = []
-LUCKY_STAR_LINES = []
+lucky_star_lines = []
+recent_image_hashes = []
 
 # ---------------
 # BOT SETUP
@@ -29,84 +37,107 @@ intents.members = True
 intents.dm_messages = True
 bot = commands.Bot(command_prefix="zy!", intents=intents)
 
+
 ### ====== Bot ======
 @bot.event
 async def on_ready():
-    await bot.change_presence(status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES"))
-    
+    await bot.change_presence(
+        status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES")
+    )
+
     await bot.load_extension("cogs.video_cog")
     await bot.load_extension("cogs.danbooru_cog")
     await bot.load_extension("cogs.admin_cog")
     await bot.load_extension("cogs.fun_cog")
-    
+
     await bot.tree.sync()
     print("[main] Synced commands globally")
-        
+
     check_commits.start()
     await check_commits()
     print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
+
 
 @bot.event
 async def on_guild_join(guild):
     await bot.tree.sync(guild=guild)
     print(f"[main] Synced commands for new guild: {guild.name} (ID: {guild.id})")
 
+
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
-    
+
     if isinstance(message.channel, discord.DMChannel):
         print(f"[main] DM from {message.author}: {message.content}")
         async with message.channel.typing():
-            llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
+            llm_data = llm.generate_content_llm(
+                message.content, message.author.display_name, conversation_context
+            )
             await message.reply(llm_data)
         await bot.process_commands(message)
         return
-    
+
     print(f"[main] Processing {message.content}")
 
     category = CHANNELS_TO_COUNT.get(message.channel.name)
     if category:
         content = message.content.strip()
-        
+
         if URL_REGEX.fullmatch(content):
             if "discord.com" not in content and "tenor.com" not in content:
                 artcounting.increment_user_artcount(message.author.id, category)
 
     if any(user.id == ZYBOTID for user in message.mentions):
         async with message.channel.typing():
-            llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
+            llm_data = llm.generate_content_llm(
+                message.content, message.author.display_name, conversation_context
+            )
             await message.reply(llm_data)
     elif message.reference and message.reference.message_id:
         replied_message = message.reference.resolved
         if replied_message and replied_message.author.id == ZYBOTID:
             async with message.channel.typing():
-                llm_data = llm.generate_content_llm(message.content, message.author.display_name, [])
+                llm_data = llm.generate_content_llm(
+                    message.content, message.author.display_name, conversation_context
+                )
                 await message.reply(llm_data)
 
     if message.channel.name == "general":
-        conversation_context.append(f"{message.author.display_name}: {message.content}")
+        conversation_context.append((message.author.display_name, message.content))
         if len(conversation_context) > 100:
             conversation_context.pop(0)
 
         rand = random.random()
         if not (message.reference and message.reference.message_id) and rand < 0.002:
             async with message.channel.typing():
-                llm_data = llm.generate_content_llm(message.content, message.author.display_name, conversation_context)
+                llm_data = llm.generate_content_llm(
+                    message.content, message.author.display_name, conversation_context
+                )
                 await message.channel.send(llm_data)
         elif rand < 0.02:
             print("[main] Sending a random Lucky Star quote")
-            if not LUCKY_STAR_LINES:
+            if not lucky_star_lines:
                 with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
-                    LUCKY_STAR_LINES.extend(f.readlines())
-            randomline = random.choice(LUCKY_STAR_LINES).strip()
+                    lucky_star_lines.extend(f.readlines())
+            randomline = random.choice(lucky_star_lines).strip()
             await message.channel.send(randomline)
-        elif rand < 0.05:
+        elif rand < 0.04:
             print("[main] Sending a random Lucky Star image from danbooru")
-            image_url = danboorusearch.get_image_url(os.getenv('DANBOORU_USERNAME'), os.getenv('DANBOORU_API_KEY'))
-            if image_url: await message.channel.send(image_url)
-        elif rand < 0.022:
+            image_url = danboorusearch.get_image_url(
+                os.getenv("DANBOORU_USERNAME"), os.getenv("DANBOORU_API_KEY")
+            )
+            if image_url:
+                img_hash = hashlib.md5(image_url.encode()).hexdigest()
+                if img_hash in recent_image_hashes:
+                    print("[main] Duplicate image hash, skipping")
+                else:
+                    recent_image_hashes.append(img_hash)
+                    if len(recent_image_hashes) > 25:
+                        recent_image_hashes.pop(0)
+                    await message.channel.send(image_url)
+        elif rand < 0.025:
             await convert_images_to_avif(message)
 
     if message.content:
@@ -117,15 +148,19 @@ async def on_message(message):
 
     await bot.process_commands(message)  # Keep commands working
 
+
 @tasks.loop(minutes=1)
 async def check_commits():
     if SEND_GIT_COMMITS:
         channel = bot.get_channel(COMMITS_CHANNEL_ID)
 
-        new_commit_embeds = commits.check_commits(os.getenv('GITHUB_TOKEN'), os.getenv('GITHUB_USERNAME'))
+        new_commit_embeds = commits.check_commits(
+            os.getenv("GITHUB_TOKEN"), os.getenv("GITHUB_USERNAME")
+        )
 
         for commit in new_commit_embeds:
             await channel.send(embed=commit)
+
 
 # ---------------
 # SYNC TREE
@@ -135,10 +170,12 @@ async def sync_tree(ctx):
     synced = await bot.tree.sync()
     await ctx.send(f"Synced {synced} - {len(synced)} commands globally.")
 
+
 ### ====== Start bot ======
 def main():
     bot.run(token=TOKEN)
 
-if __name__ ==  "__main__":
+
+if __name__ == "__main__":
     freeze_support()
     main()

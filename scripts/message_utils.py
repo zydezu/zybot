@@ -1,10 +1,13 @@
-import re
-import os
 import io
+import os
+import re
+
 import aiohttp
-from PIL import Image
 import discord
+from PIL import Image
+
 from config import EMBED_LINKS
+
 
 def convert_links_to_embed(message):
     new_message = message
@@ -13,7 +16,7 @@ def convert_links_to_embed(message):
     for original, embed_link in EMBED_LINKS:
         pattern = re.compile(
             rf"(https?://)?(www\.)?{re.escape(original)}(?=[/?#]|$)",
-            flags=re.IGNORECASE
+            flags=re.IGNORECASE,
         )
 
         def replace_domain(match, embed_link=embed_link):
@@ -33,12 +36,15 @@ async def convert_images_to_avif(message):
 
     original_text = message.content or ""
 
-    print(f"[main] Converting images in message to avif")
+    print("[main] Converting images in message to avif")
 
     avif_files = []
 
     for attachment in message.attachments:
-        if not any(attachment.filename.lower().endswith(ext) for ext in ["png", "jpg", "jpeg", "bmp", "webp", "avif"]):
+        if not any(
+            attachment.filename.lower().endswith(ext)
+            for ext in ["png", "jpg", "jpeg", "bmp", "webp", "avif"]
+        ):
             continue
 
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -65,7 +71,7 @@ async def convert_images_to_avif(message):
 
     if avif_files:
         await message.channel.send(content=original_text, files=avif_files)
-        
+
         try:
             await message.delete()
             print("[main] Original message deleted")
