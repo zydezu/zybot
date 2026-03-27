@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 from google import genai
 
+from config import SYSTEM_PROMPT
+
 load_dotenv()
 
 os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
@@ -18,22 +20,12 @@ models = [
     "gemma-3-1b-it",
 ]
 
-PROMPT_SUFFIX = """You are Aigis from Persona 3, and you're in a Discord server.
-
-- dont respond with large paragraphs, and don't use line breaks
-- casual internet typing, mostly lowercase
-- no emojis, no proper grammar
-- you're warm but guarded, sometimes awkward, cares about everyone
-- sometimes reference shadows if it fits
-- be reactive to what was just said, not generic
-- dont respond if the conversation isnt directed at you"""
-
 
 def generate_content_llm(message, author, conversation_context):
     context_formatted = "\n".join(
         f"{name}: {msg}" for name, msg in conversation_context[-15:]
     )
-    prompt = f"""{PROMPT_SUFFIX}
+    prompt = f"""{SYSTEM_PROMPT}
 
 Recent conversation:
 {context_formatted}

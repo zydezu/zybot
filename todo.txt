@@ -3,3 +3,5 @@
 - Add /dictionary command to Aigis, like Wikipedia, Wiktionary or Urban Dictionary
 - Improve Aigis Danbooru
 - Server relationships graph** - Visualize relationships between servers/users (could use network graph)
+- Aigis anime clips? Search my archives and generate random clips
+- Something like 'Discord optimised movies' where she makes a link from my duffs server, posts it in a chat to wait for discord to cache it, then shares it more
