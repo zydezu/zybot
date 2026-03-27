@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 
 import discord
 
@@ -43,14 +44,9 @@ def show_new_commit(
     deletions=None,
     summary=None,
 ):
-    if summary:
-        description = f"{message}\nSummary:_{summary}_"
-    else:
-        description = message
-
     embed = discord.Embed(
         title=f"[{repo}] 1 new commit",
-        description=description,
+        description=message,
         color=EMBED.PURPLE,
         url=url,
     )
@@ -58,10 +54,15 @@ def show_new_commit(
     embed.set_author(name=author, icon_url=author_avatar_url)
 
     if additions is not None and deletions is not None:
-        stats_text = f"```diff\n+{additions}\n-{deletions} lines\n```"
+        stats_text = f"```diff\n+{additions} lines\n-{deletions} lines\n```"
         embed.description = f"{embed.description}\n{stats_text}"
 
-    embed.set_footer(text=f"Committed on {date}")
+    if summary:
+        embed.description = f"{embed.description}\nSummary: _{summary}_"
+
+    parsed_date = datetime.fromisoformat(date.replace("Z", "+00:00"))
+    formatted_date = parsed_date.strftime("%Y-%m-%d at %H:%M %Z")
+    embed.set_footer(text=f"Committed on {formatted_date}")
 
     return embed
 
