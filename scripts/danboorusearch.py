@@ -7,6 +7,8 @@ URL = "https://danbooru.donmai.us/posts.json"
 SEARCH_TAGS = "izumi_konata hiiragi_kagami rating:s"
 LIMIT = 200
 
+BLOCKED_ARTISTS = ["setsuna22"]
+
 params = {"tags": SEARCH_TAGS, "limit": LIMIT}
 
 
@@ -61,9 +63,13 @@ def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
         if not posts:
             print(f"[danboorusearch] No posts found for query: {search_tags}")
         else:
-            # Filter posts that have file_url
+            # Filter posts that have file_url and don't contain blocked artists
             valid_posts = [
-                post for post in posts if "file_url" in post and post["file_url"]
+                post
+                for post in posts
+                if "file_url" in post
+                and post["file_url"]
+                and not any(artist in post["file_url"] for artist in BLOCKED_ARTISTS)
             ]
             if not valid_posts:
                 print(
