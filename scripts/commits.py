@@ -3,7 +3,7 @@ import os
 import requests
 
 import embed
-import llm
+import scripts.llm as llm
 
 SEEN_FILE = "data/seencommits.txt"
 
