@@ -26,7 +26,7 @@ def summarize_commit(message, additions=None, deletions=None, changed_files=None
     if additions and deletions:
         stats = f" (+{additions}, -{deletions} lines, {changed_files} files)"
 
-    prompt = f"""Summarize this git commit in a short way (max 1 sentence):
+    prompt = f"""Summarize this git commit in a short way:
 
 Commit message:
 {message}
@@ -52,7 +52,7 @@ Summary:"""
 
 def generate_content_llm(message, author, conversation_context):
     context_formatted = "\n".join(
-        f"{name}: {msg}" for name, msg in conversation_context[-15:]
+        f"{name}: {msg}" for name, msg in conversation_context
     )
     prompt = f"""{SYSTEM_PROMPT}
 
