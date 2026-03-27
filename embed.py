@@ -33,7 +33,15 @@ def show_download_complete(link):
 
 
 def show_new_commit(
-    repo, author, author_avatar_url, message, date, url, additions=None, deletions=None, summary=None
+    repo,
+    author,
+    author_avatar_url,
+    message,
+    date,
+    url,
+    additions=None,
+    deletions=None,
+    summary=None,
 ):
     if summary:
         description = f"**{summary}**\n_{message}_"
@@ -41,7 +49,10 @@ def show_new_commit(
         description = message
 
     embed = discord.Embed(
-        title=f"[{repo}] 1 new commit", description=description, color=EMBED.PURPLE, url=url
+        title=f"[{repo}] 1 new commit",
+        description=description,
+        color=EMBED.PURPLE,
+        url=url,
     )
 
     embed.set_author(name=author, icon_url=author_avatar_url)
@@ -49,7 +60,7 @@ def show_new_commit(
     if additions is not None and deletions is not None:
         stats_text = f"```diff\n+{additions} -{deletions} lines\n```"
         embed.description = f"{embed.description}\n{stats_text}"
-    
+
     embed.set_footer(text=f"Committed on {date}")
 
     return embed
