@@ -21,6 +21,35 @@ models = [
 ]
 
 
+def summarize_commit(message, additions=None, deletions=None, changed_files=None):
+    stats = ""
+    if additions and deletions:
+        stats = f" (+{additions}, -{deletions} lines, {changed_files} files)"
+
+    prompt = f"""Summarize this git commit in a short way (max 2 sentences). Focus on what changed and why:
+
+Commit message:
+{message}
+{stats}
+
+Summary:"""
+
+    print(f"[llm] Summarizing commit: {message[:50]}...")
+
+    for model in models:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+            )
+            if response and getattr(response, "text", None):
+                return response.text.strip()
+        except Exception:
+            continue
+
+    return None
+
+
 def generate_content_llm(message, author, conversation_context):
     context_formatted = "\n".join(
         f"{name}: {msg}" for name, msg in conversation_context[-15:]
@@ -42,7 +71,7 @@ Respond to the above."""
                 contents=prompt,
             )
             if response and getattr(response, "text", None):
-                return response.text
+                return response.text.strip()
         except Exception:
             continue
 
