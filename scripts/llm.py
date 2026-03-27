@@ -26,7 +26,7 @@ def summarize_commit(message, additions=None, deletions=None, changed_files=None
     if additions and deletions:
         stats = f" (+{additions}, -{deletions} lines, {changed_files} files)"
 
-    prompt = f"""Summarize this git commit in a short way (max 2 sentences). Focus on what changed and why:
+    prompt = f"""Summarize this git commit in a short way (max 1 sentence):
 
 Commit message:
 {message}
