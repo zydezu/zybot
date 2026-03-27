@@ -44,7 +44,7 @@ def show_new_commit(
     summary=None,
 ):
     if summary:
-        description = f"**{summary}**\n_{message}_"
+        description = f"{message}\nSummary:_{summary}_"
     else:
         description = message
 
@@ -58,7 +58,7 @@ def show_new_commit(
     embed.set_author(name=author, icon_url=author_avatar_url)
 
     if additions is not None and deletions is not None:
-        stats_text = f"```diff\n+{additions} -{deletions} lines\n```"
+        stats_text = f"```diff\n+{additions}\n-{deletions} lines\n```"
         embed.description = f"{embed.description}\n{stats_text}"
 
     embed.set_footer(text=f"Committed on {date}")
