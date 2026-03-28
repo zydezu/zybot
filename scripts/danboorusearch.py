@@ -7,7 +7,7 @@ URL = "https://danbooru.donmai.us/posts.json"
 SEARCH_TAGS = "izumi_konata hiiragi_kagami rating:s"
 LIMIT = 200
 
-BLOCKED_ARTISTS = ["setsuna22"]
+BLOCKED_ARTISTS = ["setsuna22", "lasterk"]
 
 params = {"tags": SEARCH_TAGS, "limit": LIMIT}
 

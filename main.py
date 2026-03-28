@@ -38,7 +38,7 @@ class BotState:
 
     def add_to_context(self, author, message):
         self.conversation_context.append((author, message))
-        if len(self.conversation_context) > 100:
+        if len(self.conversation_context) > 25:
             self.conversation_context.pop(0)
 
     def get_lucky_star_line(self):
