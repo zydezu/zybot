@@ -93,16 +93,12 @@ def check_commits(github_token, github_username):
                 additions, deletions, changed_files = get_commit_stats(
                     github_username, repo_name, sha, headers
                 )
-                summary = llm.summarize_commit(
-                    commit["message"], additions, deletions, changed_files
-                )
                 new_commit_dicts.append(
                     {
                         "repo": commit["repo"],
                         "author": commit["author"],
                         "author_avatar_url": repo["owner"]["avatar_url"],
                         "message": commit["message"],
-                        "summary": summary,
                         "date": commit["date"],
                         "url": commit["url"],
                         "additions": additions,
@@ -125,16 +121,12 @@ def check_commits(github_token, github_username):
                 additions, deletions, changed_files = get_commit_stats(
                     repo["owner"]["login"], repo_name, sha, headers
                 )
-                summary = llm.summarize_commit(
-                    commit["message"], additions, deletions, changed_files
-                )
                 new_commit_dicts.append(
                     {
                         "repo": commit["repo"],
                         "author": commit["author"],
                         "author_avatar_url": repo["owner"]["avatar_url"],
                         "message": commit["message"],
-                        "summary": summary,
                         "date": commit["date"],
                         "url": commit["url"],
                         "additions": additions,
@@ -158,7 +150,6 @@ def check_commits(github_token, github_username):
             c["url"],
             c.get("additions"),
             c.get("deletions"),
-            c.get("summary"),
         )
         for c in new_commit_dicts
     ]
