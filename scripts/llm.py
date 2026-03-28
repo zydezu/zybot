@@ -26,7 +26,7 @@ def summarize_commit(message, additions=None, deletions=None, changed_files=None
     if additions and deletions:
         stats = f"(+{additions}, -{deletions} lines, {changed_files} files)"
 
-    prompt = f"""Please summarize this git commit. Commit message: {message} {stats}. Try not to generate a copy of the commit message, keep the sentence short."""
+    prompt = f"""Summarize this git commit. Commit message: {message} {stats}. Try not to generate a copy of the commit message, keep the message short, try to make sure a non-technical person can understand this."""
 
     print(f"[llm] Summarizing commit: {message[:50]}...")
 
