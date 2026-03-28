@@ -34,15 +34,7 @@ def show_download_complete(link):
 
 
 def show_new_commit(
-    repo,
-    author,
-    author_avatar_url,
-    message,
-    date,
-    url,
-    additions=None,
-    deletions=None,
-    summary=None,
+    repo, author, author_avatar_url, message, date, url, additions=None, deletions=None
 ):
     embed = discord.Embed(
         title=f"[{repo}] 1 new commit",
@@ -56,9 +48,6 @@ def show_new_commit(
     if additions is not None and deletions is not None:
         stats_text = f"```diff\n+{additions} lines\n-{deletions} lines\n```"
         embed.description = f"{embed.description}\n{stats_text}"
-
-    if summary:
-        embed.description = f"{embed.description}\nSummary: _{summary}_"
 
     parsed_date = datetime.fromisoformat(date.replace("Z", "+00:00"))
     formatted_date = parsed_date.strftime("%Y-%m-%d at %H:%M %Z")
