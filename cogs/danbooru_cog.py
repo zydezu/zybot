@@ -1,5 +1,6 @@
 import os
 import asyncio
+import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -23,43 +24,15 @@ class DanbooruCog(commands.Cog):
             os.getenv('DANBOORU_API_KEY')
         )
         if image_url: 
-            await interaction.followup.send(content=image_url)
-
-    @app_commands.command(
-        name="search-danbooru",
-        description="Search Danbooru with parameters and get a random image from the results"
-    )
-    @app_commands.describe(
-        query="""Search tags (eg: "izumi_konata hiiragi_kagami")""",
-        rating="Content rating"
-    )
-    @app_commands.choices(rating=[
-        app_commands.Choice(name="Safe", value="s"),
-        app_commands.Choice(name="Questionable", value="q"),
-        app_commands.Choice(name="Explicit", value="e")
-    ])
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def search_danbooru(
-        self, 
-        interaction: discord.Interaction, 
-        query: str, 
-        rating: app_commands.Choice[str] | None = None
-    ):
-        await interaction.response.defer(ephemeral=False)
-        rating_value = rating.value if rating else "s"
-        print(f"[main] Searching Danbooru with query: {query}, rating: {rating_value}")
-        image_url = await asyncio.to_thread(
-            danboorusearch.get_image_url,
-            os.getenv('DANBOORU_USERNAME'),
-            os.getenv('DANBOORU_API_KEY'),
-            query,
-            rating_value
-        )
-        if image_url: 
-            await interaction.followup.send(content=image_url)
+            try:
+                await interaction.followup.send(content=image_url)
+            except aiohttp.ClientConnectionResetError:
+                pass
         else:
-            await interaction.followup.send(content="No images found for the specified query.")
+            try:
+                await interaction.followup.send(content="No images found for the specified query.")
+            except aiohttp.ClientConnectionResetError:
+                pass
 
 async def setup(bot):
     await bot.add_cog(DanbooruCog(bot))

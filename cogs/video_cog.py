@@ -1,5 +1,6 @@
 import os
 import asyncio
+import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -20,15 +21,21 @@ class VideoCog(commands.Cog):
     async def archive_video(self, interaction: discord.Interaction, link: str):
         await interaction.response.defer(ephemeral=False)
 
-        message = await interaction.followup.send(
-            embed=embed_module.show_download_progress(link)
-        )
+        try:
+            message = await interaction.followup.send(
+                embed=embed_module.show_download_progress(link)
+            )
+        except aiohttp.ClientConnectionResetError:
+            pass
 
         result = await asyncio.to_thread(downloadvideo.startvideodownload, link)
 
         completed_embed = embed_module.show_download_complete(result)
 
-        await message.edit(embed=completed_embed)
+        try:
+            await message.edit(embed=completed_embed)
+        except aiohttp.ClientConnectionResetError:
+            pass
 
 async def setup(bot):
     await bot.add_cog(VideoCog(bot))

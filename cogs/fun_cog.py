@@ -1,4 +1,5 @@
 import os
+import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -21,11 +22,17 @@ class FunCog(commands.Cog):
         target_user = user or interaction.user
         hex_color, color_image = graphics.get_accent_colour(target_user)
         embed_to_send, file = embed_module.show_accent_colour(hex_color, color_image)
-        await interaction.response.send_message(embed=embed_to_send, file=file)
+        try:
+            await interaction.response.send_message(embed=embed_to_send, file=file)
+        except aiohttp.ClientConnectionResetError:
+            pass
 
     @commands.command()
     async def hi(self, ctx):
-        await ctx.send("Hi!!")
+        try:
+            await ctx.send("Hi!!")
+        except aiohttp.ClientConnectionResetError:
+            pass
 
     @commands.command()
     async def k(self, ctx):
@@ -34,11 +41,17 @@ class FunCog(commands.Cog):
             os.getenv('DANBOORU_API_KEY')
         )
         if image_url: 
-            await ctx.send(image_url)
+            try:
+                await ctx.send(image_url)
+            except aiohttp.ClientConnectionResetError:
+                pass
 
     @commands.command()
     async def pettan(self, ctx):
-        await ctx.send(file=discord.File("media/music/つるぺったん.mp3"))
+        try:
+            await ctx.send(file=discord.File("media/music/つるぺったん.mp3"))
+        except aiohttp.ClientConnectionResetError:
+            pass
 
 async def setup(bot):
     await bot.add_cog(FunCog(bot))

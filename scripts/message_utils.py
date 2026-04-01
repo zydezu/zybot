@@ -70,7 +70,10 @@ async def convert_images_to_avif(message):
         avif_files.append(discord.File(fp=avif_buffer, filename=avif_filename))
 
     if avif_files:
-        await message.channel.send(content=original_text, files=avif_files)
+        try:
+            await message.channel.send(content=original_text, files=avif_files)
+        except aiohttp.ClientConnectionResetError:
+            pass
 
         try:
             await message.delete()
@@ -79,3 +82,5 @@ async def convert_images_to_avif(message):
             print("[main] Missing permissions to delete the original message")
         except discord.NotFound:
             print("[main] Original message already deleted")
+        except aiohttp.ClientConnectionResetError:
+            pass

@@ -3,6 +3,7 @@ import os
 import random
 from multiprocessing import freeze_support
 
+import aiohttp
 import discord
 from discord.ext import commands, tasks
 
@@ -92,7 +93,10 @@ async def handle_ai_response(message):
         llm_data = llm.generate_content_llm(
             message.content, message.author.display_name, state.conversation_context
         )
-        await message.reply(llm_data)
+        try:
+            await message.reply(llm_data)
+        except aiohttp.ClientConnectionResetError:
+            pass
 
 
 @bot.event
@@ -134,22 +138,35 @@ async def on_message(message):
             await handle_ai_response(message)
         elif rand < 0.02:
             print("[main] Sending a random Lucky Star quote")
-            await message.channel.send(state.get_lucky_star_line())
+            try:
+                await message.channel.send(state.get_lucky_star_line())
+            except aiohttp.ClientConnectionResetError:
+                pass
         elif rand < 0.04:
             print("[main] Sending a random Lucky Star image from danbooru")
             image_url = danboorusearch.get_image_url(
                 os.getenv("DANBOORU_USERNAME"), os.getenv("DANBOORU_API_KEY")
             )
             if image_url and not state.check_duplicate_image(image_url):
-                await message.channel.send(image_url)
+                try:
+                    await message.channel.send(image_url)
+                except aiohttp.ClientConnectionResetError:
+                    pass
         elif rand < 0.025:
             await convert_images_to_avif(message)
 
     if content:
         new_link, converted = convert_links_to_embed(content)
         if converted:
-            await message.edit(suppress=True)
-            await message.reply(new_link, mention_author=False)
+            try:
+                await message.edit(suppress=True)
+            except aiohttp.ClientConnectionResetError:
+                pass
+            else:
+                try:
+                    await message.reply(new_link, mention_author=False)
+                except aiohttp.ClientConnectionResetError:
+                    pass
 
     await bot.process_commands(message)
 
@@ -162,13 +179,19 @@ async def check_commits():
             os.getenv("GITHUB_TOKEN"), os.getenv("GITHUB_USERNAME")
         )
         for commit in new_commit_embeds:
-            await channel.send(embed=commit)
+            try:
+                await channel.send(embed=commit)
+            except aiohttp.ClientConnectionResetError:
+                pass
 
 
 @bot.command()
 async def sync_tree(ctx):
     synced = await bot.tree.sync()
-    await ctx.send(f"Synced {synced} - {len(synced)} commands globally.")
+    try:
+        await ctx.send(f"Synced {synced} - {len(synced)} commands globally.")
+    except aiohttp.ClientConnectionResetError:
+        pass
 
 
 def main():
