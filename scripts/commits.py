@@ -3,9 +3,9 @@ import os
 import requests
 
 import embed
-import scripts.llm as llm
 
 SEEN_FILE = "data/seencommits.txt"
+SEEN_REPOS_FILE = "data/seenrepos.txt"
 
 
 def load_seen_shas():
@@ -19,6 +19,19 @@ def save_seen_shas(shas):
     with open(SEEN_FILE, "w") as f:
         for sha in shas:
             f.write(f"{sha}\n")
+
+
+def load_seen_repos():
+    if not os.path.exists(SEEN_REPOS_FILE):
+        return set()
+    with open(SEEN_REPOS_FILE, "r") as f:
+        return set(line.strip() for line in f.readlines())
+
+
+def save_seen_repos(repos):
+    with open(SEEN_REPOS_FILE, "w") as f:
+        for repo in repos:
+            f.write(f"{repo}\n")
 
 
 def get_repos(github_username, headers):
@@ -82,11 +95,26 @@ def check_commits(github_token, github_username):
     new_shas = set(seen_shas)
     repos = get_repos(github_username, headers)
 
+    seen_repos = load_seen_repos()
+    new_seen_repos = set(seen_repos)
+    existing_commits = []
+
     new_commit_dicts = []
 
     for repo in repos:
         repo_name = repo["name"]
+        repo_id = f"{github_username}/{repo_name}"
+
         commits = get_commits(github_username, repo_name, headers)
+
+        # hacky way to stop the creation of forks flooding chat
+        if repo_id not in seen_repos:
+            for commit in commits:
+                existing_commits.append(commit["sha"])
+                new_shas.add(commit["sha"])
+
+            new_seen_repos.add(repo_id)
+            continue
         for commit in commits:
             sha = commit["sha"]
             if sha not in seen_shas:
@@ -112,9 +140,22 @@ def check_commits(github_token, github_username):
 
     for repo in extra_repos:
         repo_name = repo["name"]
+        repo_id = f"{repo['owner']['login']}/{repo_name}"
+
         if repo_name == ".github":
             continue
+
         commits = get_commits(repo["owner"]["login"], repo_name, headers)
+
+        # hacky way to stop the creation of forks flooding chat
+        if repo_id not in seen_repos:
+            for commit in commits:
+                existing_commits.append(commit["sha"])
+                new_shas.add(commit["sha"])
+
+            new_seen_repos.add(repo_id)
+            continue
+
         for commit in commits:
             sha = commit["sha"]
             if sha not in seen_shas:
@@ -137,6 +178,7 @@ def check_commits(github_token, github_username):
                 new_shas.add(sha)
 
     save_seen_shas(new_shas)
+    save_seen_repos(new_seen_repos)
 
     new_commit_dicts.sort(key=lambda c: c["date"])
 
