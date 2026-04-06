@@ -70,3 +70,21 @@ def show_accent_colour(hex_color, color_image):
 
     file = discord.File(image_bytes, filename="color.png")
     return embed, file
+
+
+def show_new_repo(repo, owner_name, owner_avatar_url, url, is_fork, description=None):
+    embed = discord.Embed(
+        title=f"New Repository {is_fork and 'Forked' or 'Created'}: {repo}",
+        description=description or "No description provided",
+        color=EMBED.PURPLE if not is_fork else EMBED.LIGHT_BLUE,
+        url=url,
+    )
+
+    embed.set_author(name=owner_name, icon_url=owner_avatar_url)
+    embed.add_field(name="Owner", value=owner_name, inline=True)
+
+    parsed_date = datetime.now()
+    formatted_date = parsed_date.strftime("%Y-%m-%d at %H:%M %Z")
+    embed.set_footer(text=f"Detected on {formatted_date}")
+
+    return embed

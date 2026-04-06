@@ -100,6 +100,7 @@ def check_commits(github_token, github_username):
     existing_commits = []
 
     new_commit_dicts = []
+    new_repo_embeds = []
 
     for repo in repos:
         repo_name = repo["name"]
@@ -114,6 +115,17 @@ def check_commits(github_token, github_username):
                 new_shas.add(commit["sha"])
 
             new_seen_repos.add(repo_id)
+
+            new_repo_embeds.append(
+                embed.show_new_repo(
+                    repo_name,
+                    repo["owner"]["login"],
+                    repo["owner"]["avatar_url"],
+                    repo.get("html_url"),
+                    repo.get("fork"),
+                    repo.get("description"),
+                )
+            )
             continue
         for commit in commits:
             sha = commit["sha"]
@@ -154,6 +166,17 @@ def check_commits(github_token, github_username):
                 new_shas.add(commit["sha"])
 
             new_seen_repos.add(repo_id)
+
+            new_repo_embeds.append(
+                embed.show_new_repo(
+                    repo_name,
+                    repo["owner"]["login"],
+                    repo["owner"]["avatar_url"],
+                    repo.get("html_url"),
+                    repo.get("fork"),
+                    repo.get("description"),
+                )
+            )
             continue
 
         for commit in commits:
@@ -196,4 +219,4 @@ def check_commits(github_token, github_username):
         for c in new_commit_dicts
     ]
 
-    return new_commits
+    return new_commits + new_repo_embeds
