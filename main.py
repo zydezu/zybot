@@ -14,11 +14,11 @@ import scripts.llm as llm
 from config import (
     CHANNELS_TO_COUNT,
     COMMITS_CHANNEL_ID,
-    LUCKYSTARLINESPATH,
+    LUCKY_STAR_LINES_PATH,
     SEND_GIT_COMMITS,
     TOKEN,
     URL_REGEX,
-    ZYBOTID,
+    ZYBOT_ID,
 )
 from scripts.message_utils import convert_images_to_avif, convert_links_to_embed
 
@@ -44,7 +44,7 @@ class BotState:
 
     def get_lucky_star_line(self):
         if not self.lucky_star_loaded:
-            with open(LUCKYSTARLINESPATH, "r", encoding="utf8") as f:
+            with open(LUCKY_STAR_LINES_PATH, "r", encoding="utf8") as f:
                 self.lucky_star_lines.extend(f.readlines())
             self.lucky_star_loaded = True
         return random.choice(self.lucky_star_lines).strip()
@@ -121,11 +121,11 @@ async def on_message(message):
 
     should_respond = False
 
-    if any(user.id == ZYBOTID for user in message.mentions):
+    if any(user.id == ZYBOT_ID for user in message.mentions):
         should_respond = True
     elif message.reference and message.reference.message_id:
         replied_message = message.reference.resolved
-        if replied_message and replied_message.author.id == ZYBOTID:
+        if replied_message and replied_message.author.id == ZYBOT_ID:
             should_respond = True
 
     if should_respond:
