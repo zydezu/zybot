@@ -12,8 +12,8 @@ import scripts.commits as commits
 import scripts.danboorusearch as danboorusearch
 import scripts.llm as llm
 from config import (
+    CHANNEL_IDS,
     CHANNELS_TO_COUNT,
-    COMMITS_CHANNEL_ID,
     LUCKY_STAR_LINES_PATH,
     SEND_GIT_COMMITS,
     TOKEN,
@@ -174,7 +174,7 @@ async def on_message(message):
 @tasks.loop(minutes=1)
 async def check_commits():
     if SEND_GIT_COMMITS:
-        channel = bot.get_channel(COMMITS_CHANNEL_ID)
+        channel = bot.get_channel(CHANNEL_IDS.get("git-commits"))
         new_commit_embeds = commits.check_commits(
             os.getenv("GITHUB_TOKEN"), os.getenv("GITHUB_USERNAME")
         )
