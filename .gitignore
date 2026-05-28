@@ -1,11 +1,11 @@
 __pycache__/
+.claude/
 .ruff_cache/
 .venv/
+.env
 images/
 tag_cache/
-videos/downloads
 listofvideos.txt
-*.json
-.env
 seencommits.txt
+*.json
 *.log

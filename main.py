@@ -15,6 +15,7 @@ from config import (
     CHANNEL_IDS,
     CHANNELS_TO_COUNT,
     LUCKY_STAR_LINES_PATH,
+    ROLE_IDS,
     SEND_GIT_COMMITS,
     TOKEN,
     URL_REGEX,
@@ -85,6 +86,14 @@ async def on_ready():
 async def on_guild_join(guild):
     await bot.tree.sync(guild=guild)
     print(f"[main] Synced commands for new guild: {guild.name} (ID: {guild.id})")
+
+
+@bot.event
+async def on_member_join(member):
+    role = member.guild.get_role(ROLE_IDS["oomfie"])
+    if role:
+        await member.add_roles(role)
+        print(f"[main] Assigned 'oomfie' role to {member} in {member.guild.name}")
 
 
 async def handle_ai_response(message):

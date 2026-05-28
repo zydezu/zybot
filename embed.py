@@ -14,25 +14,6 @@ class EMBED:
     PURPLE = 0x7289DA
 
 
-def show_download_progress(link):
-    embed = discord.Embed(
-        title="Downloading Video",
-        description=f"The video is being downloaded from: {link}",
-        color=EMBED.YELLOW,
-    )
-    embed.set_footer(text="Please wait while the video is being processed")
-    return embed
-
-
-def show_download_complete(link):
-    embed = discord.Embed(
-        title="Downloaded Video",
-        description="The download has been completed successfully!",
-        color=EMBED.GREEN,
-    )
-    return embed
-
-
 def show_new_commit(
     repo, author, author_avatar_url, message, date, url, additions=None, deletions=None
 ):
