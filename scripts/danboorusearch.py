@@ -9,14 +9,18 @@ LIMIT = 200
 
 BLOCKED_ARTISTS = ["setsuna22", "lasterk"]
 
-params = {"tags": SEARCH_TAGS, "limit": LIMIT}
+HEADERS = {"User-Agent": "zybot/1.0 (zydezu)"}
+
+
+def _get(url, params, username, api_key):
+    return requests.get(url, params=params, auth=(username, api_key), headers=HEADERS)
 
 
 def tag_exists(tag, username, api_key):
     url = "https://danbooru.donmai.us/tags.json"
     params = {"search[name_matches]": tag, "limit": 1}
 
-    r = requests.get(url, params=params, auth=(username, api_key))
+    r = _get(url, params, username, api_key)
     r.raise_for_status()
     data = r.json()
 
@@ -50,14 +54,10 @@ def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
 
     else:
         search_tags = SEARCH_TAGS
-        if rating:
-            search_tags += f" rating:{rating}"
 
     params = {"tags": search_tags, "limit": LIMIT}
 
-    response = requests.get(
-        URL, params=params, auth=(danbooru_username, danbooru_api_key)
-    )
+    response = _get(URL, params, danbooru_username, danbooru_api_key)
     if response.status_code == 200:
         posts = response.json()
         if not posts:
@@ -79,5 +79,5 @@ def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
             post = random.choice(valid_posts)
             return post["file_url"]
     else:
-        print(f"[danboorusearch] Error: {response.status_code}")
+        print(f"[danboorusearch] Error {response.status_code}: {response.text[:200]}")
     return
