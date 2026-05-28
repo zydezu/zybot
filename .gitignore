@@ -5,7 +5,9 @@ __pycache__/
 .env
 images/
 tag_cache/
+tests/
 listofvideos.txt
 seencommits.txt
+seenrepos.txt
 *.json
 *.log
