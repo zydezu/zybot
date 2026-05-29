@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import aiohttp
@@ -20,8 +21,10 @@ class FunCog(commands.Cog):
 
     @commands.command()
     async def k(self, ctx):
-        image_url = danboorusearch.get_image_url(
-            os.getenv("DANBOORU_USERNAME"), os.getenv("DANBOORU_API_KEY")
+        image_url = await asyncio.to_thread(
+            danboorusearch.get_image_url,
+            os.getenv("DANBOORU_USERNAME"),
+            os.getenv("DANBOORU_API_KEY"),
         )
         if image_url:
             try:

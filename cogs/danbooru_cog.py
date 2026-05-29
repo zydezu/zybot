@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import aiohttp
@@ -21,21 +22,16 @@ class DanbooruCog(commands.Cog):
     async def send_konata_x_kagami(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
         print("[main] Sending a random Lucky Star image from danbooru")
-        image_url = danboorusearch.get_image_url(
-            os.getenv("DANBOORU_USERNAME"), os.getenv("DANBOORU_API_KEY")
-        )
-        if image_url:
-            try:
-                await interaction.followup.send(content=image_url)
-            except aiohttp.ClientConnectionResetError:
-                pass
-        else:
-            try:
-                await interaction.followup.send(
-                    content="No images found for the specified query."
-                )
-            except aiohttp.ClientConnectionResetError:
-                pass
+        try:
+            image_url = await asyncio.to_thread(
+                danboorusearch.get_image_url,
+                os.getenv("DANBOORU_USERNAME"),
+                os.getenv("DANBOORU_API_KEY"),
+            )
+            content = image_url if image_url else "No images found for the specified query."
+            await interaction.followup.send(content=content)
+        except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
+            pass
 
     @app_commands.command(
         name="search-danbooru",
@@ -63,18 +59,18 @@ class DanbooruCog(commands.Cog):
         await interaction.response.defer(ephemeral=False)
         rating_value = rating.value if rating else "s"
         print(f"[main] Searching Danbooru with query: {query}, rating: {rating_value}")
-        image_url = danboorusearch.get_image_url(
-            os.getenv("DANBOORU_USERNAME"),
-            os.getenv("DANBOORU_API_KEY"),
-            query,
-            rating_value,
-        )
-        if image_url:
-            await interaction.followup.send(content=image_url)
-        else:
-            await interaction.followup.send(
-                content="No images found for the specified query."
+        try:
+            image_url = await asyncio.to_thread(
+                danboorusearch.get_image_url,
+                os.getenv("DANBOORU_USERNAME"),
+                os.getenv("DANBOORU_API_KEY"),
+                query,
+                rating_value,
             )
+            content = image_url if image_url else "No images found for the specified query."
+            await interaction.followup.send(content=content)
+        except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
+            pass
 
 
 async def setup(bot):
