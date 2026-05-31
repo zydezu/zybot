@@ -38,6 +38,12 @@ class AdminCog(commands.Cog):
             await channel.set_permissions(everyone, overwrite=overwrite, reason="Lockdown")
             locked.append(channel.mention)
 
+        for channel in guild.voice_channels:
+            overwrite = channel.overwrites_for(everyone)
+            overwrite.connect = False
+            await channel.set_permissions(everyone, overwrite=overwrite, reason="Lockdown")
+            locked.append(channel.mention)
+
         await interaction.followup.send(
             f"Locked {len(locked)} channel(s): {', '.join(locked)}", ephemeral=True
         )
@@ -58,6 +64,15 @@ class AdminCog(commands.Cog):
                 continue
             overwrite = channel.overwrites_for(everyone)
             overwrite.send_messages = None
+            if overwrite.is_empty():
+                await channel.set_permissions(everyone, overwrite=None, reason="Unlockdown")
+            else:
+                await channel.set_permissions(everyone, overwrite=overwrite, reason="Unlockdown")
+            unlocked.append(channel.mention)
+
+        for channel in guild.voice_channels:
+            overwrite = channel.overwrites_for(everyone)
+            overwrite.connect = None
             if overwrite.is_empty():
                 await channel.set_permissions(everyone, overwrite=None, reason="Unlockdown")
             else:
