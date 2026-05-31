@@ -96,7 +96,7 @@ class AdminCog(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        all_channels: bool = False,
+        all_channels: bool = True,
     ):
         await interaction.response.defer(ephemeral=True)
 
