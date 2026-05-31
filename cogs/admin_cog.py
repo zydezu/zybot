@@ -68,6 +68,39 @@ class AdminCog(commands.Cog):
             f"Unlocked {len(unlocked)} channel(s): {', '.join(unlocked)}", ephemeral=True
         )
 
+    @app_commands.command(
+        name="purge-user",
+        description="Delete all messages from a user in this channel or across all channels",
+    )
+    @app_commands.describe(
+        user="The user to purge messages from (or paste their ID)",
+        all_channels="Search all channels instead of just this one (slow)",
+    )
+    @app_commands.default_permissions(administrator=True)
+    async def purge_user(
+        self,
+        interaction: discord.Interaction,
+        user: discord.User,
+        all_channels: bool = False,
+    ):
+        await interaction.response.defer(ephemeral=True)
+
+        check = lambda m: m.author.id == user.id
+        channels = interaction.guild.text_channels if all_channels else [interaction.channel]
+        total = 0
+
+        for channel in channels:
+            try:
+                deleted = await channel.purge(limit=None, check=check, bulk=True)
+                total += len(deleted)
+            except discord.Forbidden:
+                pass
+
+        scope = "all channels" if all_channels else interaction.channel.mention
+        await interaction.followup.send(
+            f"Deleted {total} message(s) from {user.mention} in {scope}.", ephemeral=True
+        )
+
 
 async def setup(bot):
     await bot.add_cog(AdminCog(bot))
