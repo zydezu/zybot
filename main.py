@@ -69,7 +69,6 @@ async def on_ready():
         status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES")
     )
 
-    await bot.load_extension("cogs.video_cog")
     await bot.load_extension("cogs.danbooru_cog")
     await bot.load_extension("cogs.admin_cog")
     await bot.load_extension("cogs.fun_cog")
