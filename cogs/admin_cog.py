@@ -99,10 +99,7 @@ class AdminCog(commands.Cog):
         name="purge-user",
         description="Delete all messages from a user in this channel or across all channels",
     )
-    @app_commands.describe(
-        user="The user to purge messages from (or paste their ID)",
-        all_channels="Search all channels instead of just this one (slow)",
-    )
+    @app_commands.describe(user="The user to purge messages from (or paste their ID)")
     @app_commands.default_permissions(administrator=True)
     async def purge_user(
         self,
@@ -123,7 +120,8 @@ class AdminCog(commands.Cog):
                 pass
 
         await interaction.followup.send(
-            f"Deleted {total} message(s) from {user.mention} across all channels.", ephemeral=True
+            f"Deleted {total} message(s) from {user.mention} across all channels.",
+            ephemeral=True,
         )
 
 
