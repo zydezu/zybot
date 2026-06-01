@@ -1,8 +1,7 @@
 import discord
+import scripts.gitimport as gitimport
 from discord import app_commands
 from discord.ext import commands
-
-import scripts.gitimport as gitimport
 
 
 class AdminCog(commands.Cog):
@@ -35,13 +34,17 @@ class AdminCog(commands.Cog):
                 continue
             overwrite = channel.overwrites_for(everyone)
             overwrite.send_messages = False
-            await channel.set_permissions(everyone, overwrite=overwrite, reason="Lockdown")
+            await channel.set_permissions(
+                everyone, overwrite=overwrite, reason="Lockdown"
+            )
             locked.append(channel.mention)
 
         for channel in guild.voice_channels:
             overwrite = channel.overwrites_for(everyone)
             overwrite.connect = False
-            await channel.set_permissions(everyone, overwrite=overwrite, reason="Lockdown")
+            await channel.set_permissions(
+                everyone, overwrite=overwrite, reason="Lockdown"
+            )
             locked.append(channel.mention)
 
         await interaction.followup.send(
@@ -65,22 +68,31 @@ class AdminCog(commands.Cog):
             overwrite = channel.overwrites_for(everyone)
             overwrite.send_messages = None
             if overwrite.is_empty():
-                await channel.set_permissions(everyone, overwrite=None, reason="Unlockdown")
+                await channel.set_permissions(
+                    everyone, overwrite=None, reason="Unlockdown"
+                )
             else:
-                await channel.set_permissions(everyone, overwrite=overwrite, reason="Unlockdown")
+                await channel.set_permissions(
+                    everyone, overwrite=overwrite, reason="Unlockdown"
+                )
             unlocked.append(channel.mention)
 
         for channel in guild.voice_channels:
             overwrite = channel.overwrites_for(everyone)
             overwrite.connect = None
             if overwrite.is_empty():
-                await channel.set_permissions(everyone, overwrite=None, reason="Unlockdown")
+                await channel.set_permissions(
+                    everyone, overwrite=None, reason="Unlockdown"
+                )
             else:
-                await channel.set_permissions(everyone, overwrite=overwrite, reason="Unlockdown")
+                await channel.set_permissions(
+                    everyone, overwrite=overwrite, reason="Unlockdown"
+                )
             unlocked.append(channel.mention)
 
         await interaction.followup.send(
-            f"Unlocked {len(unlocked)} channel(s): {', '.join(unlocked)}", ephemeral=True
+            f"Unlocked {len(unlocked)} channel(s): {', '.join(unlocked)}",
+            ephemeral=True,
         )
 
     @app_commands.command(
@@ -96,12 +108,11 @@ class AdminCog(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        all_channels: bool = True,
     ):
         await interaction.response.defer(ephemeral=True)
 
         check = lambda m: m.author.id == user.id
-        channels = interaction.guild.text_channels if all_channels else [interaction.channel]
+        channels = interaction.guild.text_channels
         total = 0
 
         for channel in channels:
@@ -111,9 +122,8 @@ class AdminCog(commands.Cog):
             except discord.Forbidden:
                 pass
 
-        scope = "all channels" if all_channels else interaction.channel.mention
         await interaction.followup.send(
-            f"Deleted {total} message(s) from {user.mention} in {scope}.", ephemeral=True
+            f"Deleted {total} message(s) from {user.mention} across all channels.", ephemeral=True
         )
 
 
