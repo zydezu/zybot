@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import os
 import random
@@ -98,8 +99,11 @@ async def on_member_join(member):
 async def handle_ai_response(message):
     state.add_to_context(message.author.display_name, message.content)
     async with message.channel.typing():
-        llm_data = llm.generate_content_llm(
-            message.content, message.author.display_name, state.conversation_context
+        llm_data = await asyncio.to_thread(
+            llm.generate_content_llm,
+            message.content,
+            message.author.display_name,
+            state.conversation_context,
         )
         try:
             await message.reply(llm_data)
@@ -152,8 +156,10 @@ async def on_message(message):
                 pass
         elif rand < 0.04:
             print("[main] Sending a random Lucky Star image from danbooru")
-            image_url = danboorusearch.get_image_url(
-                os.getenv("DANBOORU_USERNAME"), os.getenv("DANBOORU_API_KEY")
+            image_url = await asyncio.to_thread(
+                danboorusearch.get_image_url,
+                os.getenv("DANBOORU_USERNAME"),
+                os.getenv("DANBOORU_API_KEY"),
             )
             if image_url and not state.check_duplicate_image(image_url):
                 try:
