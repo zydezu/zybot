@@ -1,9 +1,11 @@
 import asyncio
 
 import discord
-import scripts.gitimport as gitimport
 from discord import app_commands
 from discord.ext import commands
+
+import embed as embed_module
+import scripts.gitimport as gitimport
 
 
 class AdminCog(commands.Cog):
@@ -16,7 +18,9 @@ class AdminCog(commands.Cog):
     )
     @commands.has_permissions(administrator=True)
     async def shoot_and_kill_bot_grrrrr(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Restarting...")
+        await interaction.response.send_message(
+            embed=embed_module.show_restart(interaction.user.display_name)
+        )
         await asyncio.sleep(1)
         await self.bot.close()
         gitimport.restart_bot()
@@ -27,7 +31,7 @@ class AdminCog(commands.Cog):
     )
     @app_commands.default_permissions(administrator=True)
     async def lockdown(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
         guild = interaction.guild
         everyone = guild.default_role
         locked = []
@@ -51,7 +55,7 @@ class AdminCog(commands.Cog):
             locked.append(channel.mention)
 
         await interaction.followup.send(
-            f"Locked {len(locked)} channel(s): {', '.join(locked)}", ephemeral=True
+            embed=embed_module.show_lockdown(locked, interaction.user.display_name)
         )
 
     @app_commands.command(
@@ -60,7 +64,7 @@ class AdminCog(commands.Cog):
     )
     @app_commands.default_permissions(administrator=True)
     async def unlockdown(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
         guild = interaction.guild
         everyone = guild.default_role
         unlocked = []
@@ -94,13 +98,12 @@ class AdminCog(commands.Cog):
             unlocked.append(channel.mention)
 
         await interaction.followup.send(
-            f"Unlocked {len(unlocked)} channel(s): {', '.join(unlocked)}",
-            ephemeral=True,
+            embed=embed_module.show_unlockdown(unlocked, interaction.user.display_name)
         )
 
     @app_commands.command(
         name="purge-user",
-        description="Delete all messages from a user in this channel or across all channels",
+        description="Delete all messages from a user across all channels",
     )
     @app_commands.describe(user="The user to purge messages from (or paste their ID)")
     @app_commands.default_permissions(administrator=True)
@@ -112,10 +115,9 @@ class AdminCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         check = lambda m: m.author.id == user.id
-        channels = interaction.guild.text_channels
         total = 0
 
-        for channel in channels:
+        for channel in interaction.guild.text_channels:
             try:
                 deleted = await channel.purge(limit=None, check=check, bulk=True)
                 total += len(deleted)
@@ -123,7 +125,9 @@ class AdminCog(commands.Cog):
                 pass
 
         await interaction.followup.send(
-            f"Deleted {total} message(s) from {user.mention} across all channels.",
+            embed=embed_module.show_purge_user(
+                user, total, interaction.user.display_name
+            ),
             ephemeral=True,
         )
 

@@ -53,6 +53,46 @@ def show_accent_colour(hex_color, color_image):
     return embed, file
 
 
+def show_lockdown(locked_channels, actor):
+    embed = discord.Embed(
+        title="Server Locked Down",
+        description=f"Locked **{len(locked_channels)}** channel(s).\n\n{' '.join(locked_channels)}",
+        color=EMBED.RED,
+    )
+    embed.set_footer(text=f"Locked by {actor}")
+    return embed
+
+
+def show_unlockdown(unlocked_channels, actor):
+    embed = discord.Embed(
+        title="Server Unlocked",
+        description=f"Unlocked **{len(unlocked_channels)}** channel(s).\n\n{' '.join(unlocked_channels)}",
+        color=EMBED.GREEN,
+    )
+    embed.set_footer(text=f"Unlocked by {actor}")
+    return embed
+
+
+def show_purge_user(user, total, actor):
+    embed = discord.Embed(
+        title="Messages Purged",
+        description=f"Deleted **{total}** message(s) from {user.mention} across all channels.",
+        color=EMBED.STANDARD,
+    )
+    embed.set_footer(text=f"Purged by {actor}")
+    return embed
+
+
+def show_restart(actor):
+    embed = discord.Embed(
+        title="Restarting...",
+        description="The bot is restarting. Back in a moment.",
+        color=EMBED.YELLOW,
+    )
+    embed.set_footer(text=f"Restarted by {actor}")
+    return embed
+
+
 def show_new_repo(repo, owner_name, owner_avatar_url, url, is_fork, description=None):
     embed = discord.Embed(
         title=f"New Repository {is_fork and 'Forked' or 'Created'}: {repo}",
