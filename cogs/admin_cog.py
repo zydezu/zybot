@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 import scripts.gitimport as gitimport
 from discord import app_commands
@@ -15,6 +17,7 @@ class AdminCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def shoot_and_kill_bot_grrrrr(self, interaction: discord.Interaction):
         await interaction.response.send_message("Restarting...")
+        await asyncio.sleep(1)
         await self.bot.close()
         gitimport.restart_bot()
 
