@@ -71,7 +71,7 @@ async def on_ready():
         activity=discord.Activity(
             type=discord.ActivityType.playing,
             name="Persona 3 FES",
-            assets={"large_image": "persona3fes", "large_text": "Persona 3 FES"},
+            assets={"large_image": "https://files.catbox.moe/i097r4.jpg"},
             application_id=ZYBOT_ID,
         ),
     )
