@@ -67,7 +67,13 @@ state = BotState()
 @bot.event
 async def on_ready():
     await bot.change_presence(
-        status=discord.Status.online, activity=discord.Game("Playing Persona 3 FES")
+        status=discord.Status.online,
+        activity=discord.Activity(
+            type=discord.ActivityType.playing,
+            name="Persona 3 FES",
+            assets={"large_image": "persona3fes", "large_text": "Persona 3 FES"},
+            application_id=ZYBOT_ID,
+        ),
     )
 
     await bot.load_extension("cogs.danbooru_cog")
