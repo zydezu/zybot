@@ -37,7 +37,19 @@ def show_new_commit(
     return embed
 
 
-def show_new_release(repo, author, author_avatar_url, tag, name, body, url, published_at, prerelease=False):
+def show_new_release(
+    repo,
+    author,
+    author_avatar_url,
+    tag,
+    name,
+    body,
+    url,
+    published_at,
+    prerelease=False,
+    assets_count=None,
+    zipball_url=None,
+):
     label = "Pre-Release" if prerelease else "Release"
     embed = discord.Embed(
         title=f"[{repo}] New {label}: {name}",
@@ -46,7 +58,11 @@ def show_new_release(repo, author, author_avatar_url, tag, name, body, url, publ
         url=url,
     )
     embed.set_author(name=author, icon_url=author_avatar_url)
-    embed.add_field(name="Tag", value=tag, inline=True)
+
+    if assets_count is not None:
+        embed.add_field(name="Assets", value=str(assets_count), inline=True)
+    if zipball_url:
+        embed.add_field(name="Download", value=f"[Source zip]({zipball_url})", inline=True)
 
     parsed_date = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
     formatted_date = parsed_date.strftime("%Y-%m-%d at %H:%M %Z")

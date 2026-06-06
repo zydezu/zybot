@@ -34,11 +34,11 @@ def get_commits(owner, repo_name, headers):
     return [
         {
             "repo": repo_name,
-            "sha": commit["sha"],
-            "author": commit["commit"]["author"]["name"],
-            "message": commit["commit"]["message"],
-            "url": commit["html_url"],
-            "date": commit["commit"]["author"]["date"],
+            "sha": commit.get("sha"),
+            "author": commit.get("commit", {}).get("author", {}).get("name"),
+            "message": commit.get("commit", {}).get("message"),
+            "url": commit.get("html_url"),
+            "date": commit.get("commit", {}).get("author", {}).get("date"),
         }
         for commit in commits
     ]
@@ -60,14 +60,16 @@ def get_releases(owner, repo_name, headers):
         return []
     return [
         {
-            "tag": r["tag_name"],
-            "name": r.get("name") or r["tag_name"],
+            "tag": r.get("tag_name"),
+            "name": r.get("name") or r.get("tag_name"),
             "body": r.get("body") or "",
-            "url": r["html_url"],
-            "author": r["author"]["login"],
-            "author_avatar_url": r["author"]["avatar_url"],
-            "published_at": r["published_at"],
+            "url": r.get("html_url"),
+            "author": r.get("author", {}).get("login"),
+            "author_avatar_url": r.get("author", {}).get("avatar_url"),
+            "published_at": r.get("published_at"),
             "prerelease": r.get("prerelease", False),
+            "assets_count": len(r.get("assets", [])),
+            "zipball_url": r.get("zipball_url"),
         }
         for r in releases
         if not r.get("draft")
@@ -80,29 +82,40 @@ def get_org_repos(github_username, headers):
     ).json()
     org_repos = []
     for org in orgs:
-        org_repos.extend(requests.get(org["repos_url"], headers=headers).json())
+        org_repos.extend(requests.get(org.get("repos_url"), headers=headers).json())
     return org_repos
 
 
-def _process_repo(repo, owner, repo_id, headers, seen_repos, seen_releases,
-                  new_shas, new_seen_repos, new_seen_releases,
-                  new_commit_dicts, new_release_dicts, new_repo_embeds):
-    repo_name = repo["name"]
+def _process_repo(
+    repo,
+    owner,
+    repo_id,
+    headers,
+    seen_repos,
+    seen_releases,
+    new_shas,
+    new_seen_repos,
+    new_seen_releases,
+    new_commit_dicts,
+    new_release_dicts,
+    new_repo_embeds,
+):
+    repo_name = repo.get("name")
     commits = get_commits(owner, repo_name, headers)
 
     # hacky way to stop the creation of forks flooding chat
     if repo_id not in seen_repos:
         for commit in commits:
-            new_shas.add(commit["sha"])
+            new_shas.add(commit.get("sha"))
         for release in get_releases(owner, repo_name, headers):
-            if not release["prerelease"]:
-                new_seen_releases.add(f"{repo_id}/{release['tag']}")
+            if not release.get("prerelease"):
+                new_seen_releases.add(f"{repo_id}/{release.get('tag')}")
         new_seen_repos.add(repo_id)
         new_repo_embeds.append(
             embed.show_new_repo(
                 repo_name,
-                repo["owner"]["login"],
-                repo["owner"]["avatar_url"],
+                repo.get("owner", {}).get("login"),
+                repo.get("owner", {}).get("avatar_url"),
                 repo.get("html_url"),
                 repo.get("fork"),
                 repo.get("description"),
@@ -111,17 +124,17 @@ def _process_repo(repo, owner, repo_id, headers, seen_repos, seen_releases,
         return
 
     for commit in commits:
-        sha = commit["sha"]
+        sha = commit.get("sha")
         if sha not in new_shas:
             additions, deletions = get_commit_stats(owner, repo_name, sha, headers)
             new_commit_dicts.append(
                 {
                     "repo": repo_name,
-                    "author": commit["author"],
-                    "author_avatar_url": repo["owner"]["avatar_url"],
-                    "message": commit["message"],
-                    "date": commit["date"],
-                    "url": commit["url"],
+                    "author": commit.get("author"),
+                    "author_avatar_url": repo.get("owner", {}).get("avatar_url"),
+                    "message": commit.get("message"),
+                    "date": commit.get("date"),
+                    "url": commit.get("url"),
                     "additions": additions,
                     "deletions": deletions,
                 }
@@ -129,9 +142,9 @@ def _process_repo(repo, owner, repo_id, headers, seen_repos, seen_releases,
             new_shas.add(sha)
 
     for release in get_releases(owner, repo_name, headers):
-        if release["prerelease"]:
+        if release.get("prerelease"):
             continue
-        release_key = f"{repo_id}/{release['tag']}"
+        release_key = f"{repo_id}/{release.get('tag')}"
         if release_key not in seen_releases:
             new_release_dicts.append({"repo": repo_name, **release})
             new_seen_releases.add(release_key)
@@ -153,41 +166,65 @@ def check_commits(github_token, github_username):
     new_repo_embeds = []
 
     process_args = (
-        headers, seen_repos, seen_releases,
-        new_shas, new_seen_repos, new_seen_releases,
-        new_commit_dicts, new_release_dicts, new_repo_embeds,
+        headers,
+        seen_repos,
+        seen_releases,
+        new_shas,
+        new_seen_repos,
+        new_seen_releases,
+        new_commit_dicts,
+        new_release_dicts,
+        new_repo_embeds,
     )
 
     for repo in get_repos(github_username, headers):
-        _process_repo(repo, github_username, f"{github_username}/{repo['name']}", *process_args)
+        _process_repo(
+            repo,
+            github_username,
+            f"{github_username}/{repo.get('name')}",
+            *process_args,
+        )
 
     for repo in get_org_repos(github_username, headers):
-        if repo["name"] == ".github":
+        if repo.get("name") == ".github":
             continue
-        owner = repo["owner"]["login"]
-        _process_repo(repo, owner, f"{owner}/{repo['name']}", *process_args)
+        owner = repo.get("owner", {}).get("login")
+        _process_repo(repo, owner, f"{owner}/{repo.get('name')}", *process_args)
 
     save_seen(SEEN_FILE, new_shas)
     save_seen(SEEN_REPOS_FILE, new_seen_repos)
     save_seen(SEEN_RELEASES_FILE, new_seen_releases)
 
-    new_commit_dicts.sort(key=lambda c: c["date"])
-    new_release_dicts.sort(key=lambda r: r["published_at"])
+    new_commit_dicts.sort(key=lambda c: c.get("date"))
+    new_release_dicts.sort(key=lambda r: r.get("published_at"))
 
     new_commits = [
         embed.show_new_commit(
-            c["repo"], c["author"], c["author_avatar_url"],
-            c["message"], c["date"], c["url"],
-            c.get("additions"), c.get("deletions"),
+            c.get("repo"),
+            c.get("author"),
+            c.get("author_avatar_url"),
+            c.get("message"),
+            c.get("date"),
+            c.get("url"),
+            c.get("additions"),
+            c.get("deletions"),
         )
         for c in new_commit_dicts
     ]
 
     new_releases = [
         embed.show_new_release(
-            r["repo"], r["author"], r["author_avatar_url"],
-            r["tag"], r["name"], r["body"], r["url"],
-            r["published_at"], r["prerelease"],
+            r.get("repo"),
+            r.get("author"),
+            r.get("author_avatar_url"),
+            r.get("tag"),
+            r.get("name"),
+            r.get("body"),
+            r.get("url"),
+            r.get("published_at"),
+            r.get("prerelease"),
+            assets_count=r.get("assets_count"),
+            zipball_url=r.get("zipball_url"),
         )
         for r in new_release_dicts
     ]
