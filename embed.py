@@ -37,6 +37,24 @@ def show_new_commit(
     return embed
 
 
+def show_new_release(repo, author, author_avatar_url, tag, name, body, url, published_at, prerelease=False):
+    label = "Pre-Release" if prerelease else "Release"
+    embed = discord.Embed(
+        title=f"[{repo}] New {label}: {name}",
+        description=body[:2048] if body else "No release notes provided.",
+        color=EMBED.YELLOW if prerelease else EMBED.GREEN,
+        url=url,
+    )
+    embed.set_author(name=author, icon_url=author_avatar_url)
+    embed.add_field(name="Tag", value=tag, inline=True)
+
+    parsed_date = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+    formatted_date = parsed_date.strftime("%Y-%m-%d at %H:%M %Z")
+    embed.set_footer(text=f"Published on {formatted_date}")
+
+    return embed
+
+
 def show_accent_colour(hex_color, color_image):
     embed = discord.Embed(
         title="Accent Colour",
