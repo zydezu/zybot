@@ -95,7 +95,8 @@ def _process_repo(repo, owner, repo_id, headers, seen_repos, seen_releases,
         for commit in commits:
             new_shas.add(commit["sha"])
         for release in get_releases(owner, repo_name, headers):
-            new_seen_releases.add(f"{repo_id}/{release['tag']}")
+            if not release["prerelease"]:
+                new_seen_releases.add(f"{repo_id}/{release['tag']}")
         new_seen_repos.add(repo_id)
         new_repo_embeds.append(
             embed.show_new_repo(
@@ -128,6 +129,8 @@ def _process_repo(repo, owner, repo_id, headers, seen_repos, seen_releases,
             new_shas.add(sha)
 
     for release in get_releases(owner, repo_name, headers):
+        if release["prerelease"]:
+            continue
         release_key = f"{repo_id}/{release['tag']}"
         if release_key not in seen_releases:
             new_release_dicts.append({"repo": repo_name, **release})
