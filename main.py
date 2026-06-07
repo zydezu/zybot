@@ -189,9 +189,15 @@ async def on_message(message):
 async def check_commits():
     if SEND_GIT_COMMITS:
         channel = bot.get_channel(CHANNEL_IDS.get("git-commits"))
-        new_commit_embeds = commits.check_commits(
-            os.getenv("GITHUB_TOKEN"), os.getenv("GITHUB_USERNAME")
-        )
+        try:
+            new_commit_embeds = await asyncio.to_thread(
+                commits.check_commits,
+                os.getenv("GITHUB_TOKEN"),
+                os.getenv("GITHUB_USERNAME"),
+            )
+        except Exception as e:
+            print(f"[main] check_commits error: {e}")
+            return
         for commit in new_commit_embeds:
             try:
                 await channel.send(embed=commit)
