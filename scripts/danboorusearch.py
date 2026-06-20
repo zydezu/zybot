@@ -8,12 +8,26 @@ SEARCH_TAGS = "izumi_konata hiiragi_kagami rating:s"
 LIMIT = 200
 
 BLOCKED_ARTISTS = ["setsuna22", "lasterk"]
+ANIMATED_EXTENSIONS = (".gif", ".mp4", ".webm")
 
 HEADERS = {"User-Agent": "zybot/1.0 (zydezu)"}
 
 
 def _get(url, params, username, api_key):
     return requests.get(url, params=params, auth=(username, api_key), headers=HEADERS)
+
+
+def upload_to_catbox(url):
+    response = requests.post(
+        "https://catbox.moe/user/api.php",
+        data={"reqtype": "urlupload", "url": url},
+        headers=HEADERS,
+        timeout=120,
+    )
+    if response.status_code == 200 and response.text.strip().startswith("https://"):
+        return response.text.strip()
+    print(f"[danboorusearch] Catbox upload failed: {response.status_code} {response.text[:100]}")
+    return url
 
 
 def tag_exists(tag, username, api_key):
@@ -77,7 +91,11 @@ def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
                 )
                 return
             post = random.choice(valid_posts)
-            return post["file_url"]
+            file_url = post["file_url"]
+            if any(file_url.lower().endswith(ext) for ext in ANIMATED_EXTENSIONS):
+                print(f"[danboorusearch] Uploading animated media to catbox: {file_url}")
+                file_url = upload_to_catbox(file_url)
+            return file_url
     else:
         print(f"[danboorusearch] Error {response.status_code}: {response.text[:200]}")
     return

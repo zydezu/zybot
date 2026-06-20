@@ -12,6 +12,7 @@ import scripts.danboorusearch as danboorusearch
 class SearchAgainView(discord.ui.View):
     def __init__(
         self,
+        url=None,
         query=None,
         rating="s",
         no_result_msg="No images found for the specified query.",
@@ -20,6 +21,12 @@ class SearchAgainView(discord.ui.View):
         self.query = query
         self.rating = rating
         self.no_result_msg = no_result_msg
+        self.link_button: discord.ui.Button | None = None
+        if url:
+            self.link_button = discord.ui.Button(
+                label="Open Link", style=discord.ButtonStyle.link, url=url
+            )
+            self.add_item(self.link_button)
 
     @discord.ui.button(label="Search Again", style=discord.ButtonStyle.secondary)
     async def search_again(
@@ -32,6 +39,14 @@ class SearchAgainView(discord.ui.View):
                 args += [self.query, self.rating]
             image_url = await asyncio.to_thread(danboorusearch.get_image_url, *args)
             content = image_url if image_url else self.no_result_msg
+            if image_url:
+                if self.link_button is None:
+                    self.link_button = discord.ui.Button(
+                        label="Open Link", style=discord.ButtonStyle.link, url=image_url
+                    )
+                    self.add_item(self.link_button)
+                else:
+                    self.link_button.url = image_url
             await interaction.edit_original_response(content=content, view=self)
         except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
             pass
@@ -65,7 +80,7 @@ class DanbooruCog(commands.Cog):
             content = (
                 image_url if image_url else "No images found for the specified query."
             )
-            await interaction.followup.send(content=content, view=SearchAgainView())
+            await interaction.followup.send(content=content, view=SearchAgainView(url=image_url))
         except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
             pass
 
@@ -108,7 +123,10 @@ class DanbooruCog(commands.Cog):
             await interaction.followup.send(
                 content=content,
                 view=SearchAgainView(
-                    query=query, rating=rating_value, no_result_msg=no_result_msg
+                    url=image_url,
+                    query=query,
+                    rating=rating_value,
+                    no_result_msg=no_result_msg,
                 ),
             )
         except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):

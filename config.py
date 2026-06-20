@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+TOKEN: str = os.getenv("DISCORD_TOKEN")  # type: ignore[assignment]
 
 ZYBOT_ID = 1460308838879072266
 CHANNEL_IDS = {"git-commits": 1467708228917002431, "aigis-output": 1494663155421282374}
