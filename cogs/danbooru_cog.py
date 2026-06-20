@@ -9,6 +9,40 @@ from discord.ext import commands
 import scripts.danboorusearch as danboorusearch
 
 
+class SearchAgainView(discord.ui.View):
+    def __init__(
+        self,
+        query=None,
+        rating="s",
+        no_result_msg="No images found for the specified query.",
+    ):
+        super().__init__(timeout=600)
+        self.query = query
+        self.rating = rating
+        self.no_result_msg = no_result_msg
+
+    @discord.ui.button(label="Search Again", style=discord.ButtonStyle.secondary)
+    async def search_again(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await interaction.response.defer()
+        try:
+            args = [os.getenv("DANBOORU_USERNAME"), os.getenv("DANBOORU_API_KEY")]
+            if self.query is not None:
+                args += [self.query, self.rating]
+            image_url = await asyncio.to_thread(danboorusearch.get_image_url, *args)
+            content = image_url if image_url else self.no_result_msg
+            await interaction.edit_original_response(content=content, view=self)
+        except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
+            pass
+
+    @discord.ui.button(label="Delete Message", style=discord.ButtonStyle.danger)
+    async def delete_message(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await interaction.message.delete()
+
+
 class DanbooruCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -28,8 +62,10 @@ class DanbooruCog(commands.Cog):
                 os.getenv("DANBOORU_USERNAME"),
                 os.getenv("DANBOORU_API_KEY"),
             )
-            content = image_url if image_url else "No images found for the specified query."
-            await interaction.followup.send(content=content)
+            content = (
+                image_url if image_url else "No images found for the specified query."
+            )
+            await interaction.followup.send(content=content, view=SearchAgainView())
         except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
             pass
 
@@ -67,8 +103,14 @@ class DanbooruCog(commands.Cog):
                 query,
                 rating_value,
             )
-            content = image_url if image_url else "No images found for the specified query."
-            await interaction.followup.send(content=content)
+            no_result_msg = "No images found for the specified query, view a list of tags [here](https://gist.githubusercontent.com/bem13/0bc5091819f0594c53f0d96972c8b6ff/raw/b0aacd5ea4634ed4a9f320d344cc1fe81a60db5a/danbooru_tags_post_count.csv)!"
+            content = image_url if image_url else no_result_msg
+            await interaction.followup.send(
+                content=content,
+                view=SearchAgainView(
+                    query=query, rating=rating_value, no_result_msg=no_result_msg
+                ),
+            )
         except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
             pass
 
