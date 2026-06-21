@@ -95,7 +95,8 @@ def get_image_url(danbooru_username, danbooru_api_key, query=None, rating=None):
             if any(file_url.lower().endswith(ext) for ext in ANIMATED_EXTENSIONS):
                 print(f"[danboorusearch] Uploading animated media to catbox: {file_url}")
                 file_url = upload_to_catbox(file_url)
-            return file_url
+            post_url = f"https://danbooru.donmai.us/posts/{post['id']}"
+            return file_url, post_url
     else:
         print(f"[danboorusearch] Error {response.status_code}: {response.text[:200]}")
     return

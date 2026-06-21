@@ -12,7 +12,7 @@ import scripts.danboorusearch as danboorusearch
 class SearchAgainView(discord.ui.View):
     def __init__(
         self,
-        url=None,
+        post_url=None,
         query=None,
         rating="s",
         no_result_msg="No images found for the specified query.",
@@ -22,9 +22,9 @@ class SearchAgainView(discord.ui.View):
         self.rating = rating
         self.no_result_msg = no_result_msg
         self.link_button: discord.ui.Button | None = None
-        if url:
+        if post_url:
             self.link_button = discord.ui.Button(
-                label="Open Link", style=discord.ButtonStyle.link, url=url
+                label="Open Link", style=discord.ButtonStyle.link, url=post_url
             )
             self.add_item(self.link_button)
 
@@ -37,16 +37,17 @@ class SearchAgainView(discord.ui.View):
             args = [os.getenv("DANBOORU_USERNAME"), os.getenv("DANBOORU_API_KEY")]
             if self.query is not None:
                 args += [self.query, self.rating]
-            image_url = await asyncio.to_thread(danboorusearch.get_image_url, *args)
+            result = await asyncio.to_thread(danboorusearch.get_image_url, *args)
+            image_url, post_url = result if result else (None, None)
             content = image_url if image_url else self.no_result_msg
-            if image_url:
+            if post_url:
                 if self.link_button is None:
                     self.link_button = discord.ui.Button(
-                        label="Open Link", style=discord.ButtonStyle.link, url=image_url
+                        label="Open Link", style=discord.ButtonStyle.link, url=post_url
                     )
                     self.add_item(self.link_button)
                 else:
-                    self.link_button.url = image_url
+                    self.link_button.url = post_url
             await interaction.edit_original_response(content=content, view=self)
         except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
             pass
@@ -72,15 +73,14 @@ class DanbooruCog(commands.Cog):
         await interaction.response.defer(ephemeral=False)
         print("[main] Sending a random Lucky Star image from danbooru")
         try:
-            image_url = await asyncio.to_thread(
+            result = await asyncio.to_thread(
                 danboorusearch.get_image_url,
                 os.getenv("DANBOORU_USERNAME"),
                 os.getenv("DANBOORU_API_KEY"),
             )
-            content = (
-                image_url if image_url else "No images found for the specified query."
-            )
-            await interaction.followup.send(content=content, view=SearchAgainView(url=image_url))
+            image_url, post_url = result if result else (None, None)
+            content = image_url if image_url else "No images found for the specified query."
+            await interaction.followup.send(content=content, view=SearchAgainView(post_url=post_url))
         except (aiohttp.ClientConnectionResetError, discord.errors.NotFound):
             pass
 
@@ -111,19 +111,20 @@ class DanbooruCog(commands.Cog):
         rating_value = rating.value if rating else "s"
         print(f"[main] Searching Danbooru with query: {query}, rating: {rating_value}")
         try:
-            image_url = await asyncio.to_thread(
+            result = await asyncio.to_thread(
                 danboorusearch.get_image_url,
                 os.getenv("DANBOORU_USERNAME"),
                 os.getenv("DANBOORU_API_KEY"),
                 query,
                 rating_value,
             )
+            image_url, post_url = result if result else (None, None)
             no_result_msg = "No images found for the specified query, view a list of tags [here](https://gist.githubusercontent.com/bem13/0bc5091819f0594c53f0d96972c8b6ff/raw/b0aacd5ea4634ed4a9f320d344cc1fe81a60db5a/danbooru_tags_post_count.csv)!"
             content = image_url if image_url else no_result_msg
             await interaction.followup.send(
                 content=content,
                 view=SearchAgainView(
-                    url=image_url,
+                    post_url=post_url,
                     query=query,
                     rating=rating_value,
                     no_result_msg=no_result_msg,
