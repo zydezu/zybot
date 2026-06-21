@@ -90,10 +90,11 @@ async def on_guild_join(guild):
 
 @bot.event
 async def on_member_join(member):
-    role = member.guild.get_role(ROLE_IDS["oomfie"])
-    if role:
-        await member.add_roles(role)
-        print(f"[main] Assigned 'oomfie' role to {member} in {member.guild.name}")
+    verify_channel = bot.get_channel(1518307007952715786)
+    if verify_channel:
+        await verify_channel.send(
+            f"Please send your xitter @ here or otherwise prove you're not a bot... {member.mention}"
+        )
 
 
 async def handle_ai_response(message):
