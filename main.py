@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import os
 import random
+from collections import defaultdict
 from multiprocessing import freeze_support
 
 import aiohttp
@@ -34,15 +35,16 @@ bot = commands.Bot(command_prefix="zy!", intents=intents)
 
 class BotState:
     def __init__(self):
-        self.conversation_context = []
+        self.conversation_context = defaultdict(list)
         self.lucky_star_lines = []
         self.recent_image_hashes = []
         self.lucky_star_loaded = False
 
-    def add_to_context(self, author, message):
-        self.conversation_context.append((author, message))
-        if len(self.conversation_context) > 25:
-            self.conversation_context.pop(0)
+    def add_to_context(self, channel_id, author, message):
+        context = self.conversation_context[channel_id]
+        context.append((author, message))
+        if len(context) > 25:
+            context.pop(0)
 
     def get_lucky_star_line(self):
         if not self.lucky_star_loaded:
@@ -98,15 +100,16 @@ async def on_member_join(member):
 
 
 async def handle_ai_response(message):
-    state.add_to_context(message.author.display_name, message.content)
+    channel_id = message.channel.id
+    state.add_to_context(channel_id, message.author.display_name, message.content)
     async with message.channel.typing():
         llm_data = await asyncio.to_thread(
             llm.generate_content_llm,
             message.content,
             message.author.display_name,
-            state.conversation_context,
+            state.conversation_context[channel_id],
         )
-        state.add_to_context("Aigis", llm_data)
+        state.add_to_context(channel_id, "Aigis", llm_data)
         try:
             await message.reply(llm_data)
         except aiohttp.ClientConnectionResetError:
