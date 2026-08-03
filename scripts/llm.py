@@ -1,5 +1,6 @@
 import os
 import string
+from datetime import datetime
 
 from dotenv import load_dotenv
 from google import genai
@@ -25,7 +26,16 @@ MODELS = [
 ]
 
 _QUESTION_WORDS = {
-    "who", "what", "when", "where", "why", "how", "which", "whose", "whom",
+    "who",
+    "what",
+    "whats",
+    "when",
+    "where",
+    "why",
+    "how",
+    "which",
+    "whose",
+    "whom",
 }
 
 BASE_CONFIG = types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
@@ -51,7 +61,10 @@ def generate_content_llm(message, author, conversation_context):
     context_formatted = "\n".join(
         f"{name}: {msg}" for name, msg in conversation_context
     )
-    prompt = f"""Recent conversation:
+    today = datetime.now().strftime("%A, %B %d, %Y")
+    prompt = f"""Today is {today}.
+
+Recent conversation:
 {context_formatted}
 
 {author}: {message}

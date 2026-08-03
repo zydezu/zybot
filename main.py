@@ -106,6 +106,7 @@ async def handle_ai_response(message):
             message.author.display_name,
             state.conversation_context,
         )
+        state.add_to_context("Aigis", llm_data)
         try:
             await message.reply(llm_data)
         except aiohttp.ClientConnectionResetError:
