@@ -22,6 +22,8 @@ EMBED_LINKS = [
     ("https://www.tiktok.com", "https://www.tnktok.com"),
     ("https://bsky.app", "https://bsyy.app"),
     ("https://pixiv.com", "https://phixiv.com"),
+    ("https://facebook.com", "https://facebed.com"),
+    ("https://www.facebook.com", "https://www.facebed.com"),
 ]
 
 CHANNELS_TO_COUNT = {"art": "art", "yaoi": "art", "yuri": "yuri"}
