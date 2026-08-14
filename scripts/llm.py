@@ -38,10 +38,28 @@ _QUESTION_WORDS = {
     "whom",
 }
 
+# Imperative follow-ups (eg. "check for me" after Aigis offers to look
+# something up) don't end in "?" or start with a question word, but still
+# need grounding or the model has no way to actually fulfil them.
+_LOOKUP_PHRASES = (
+    "check",
+    "look up",
+    "look into",
+    "look that up",
+    "search",
+    "find out",
+    "google it",
+    "tell me about",
+)
+
 
 def _system_instruction():
-    today = datetime.now().strftime("%A, %B %d, %Y")
-    return f"{SYSTEM_PROMPT}\n\nToday is {today}."
+    now = datetime.now()
+    return (
+        f"{SYSTEM_PROMPT}\n\n"
+        f"Right now it's {now.strftime('%A, %B %d, %Y')}, "
+        f"{now.strftime('%-I:%M %p')} (UK time, this server's clock)."
+    )
 
 
 def _looks_factual(message: str) -> bool:
@@ -53,7 +71,9 @@ def _looks_factual(message: str) -> bool:
     if text.endswith("?"):
         return True
     first_word = text.split(maxsplit=1)[0].strip(string.punctuation)
-    return first_word in _QUESTION_WORDS
+    if first_word in _QUESTION_WORDS:
+        return True
+    return any(phrase in text for phrase in _LOOKUP_PHRASES)
 
 
 def _build_contents(conversation_context):
