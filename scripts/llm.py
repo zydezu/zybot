@@ -38,11 +38,10 @@ _QUESTION_WORDS = {
     "whom",
 }
 
-BASE_CONFIG = types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
-GROUNDED_CONFIG = types.GenerateContentConfig(
-    system_instruction=SYSTEM_PROMPT,
-    tools=[types.Tool(google_search=types.GoogleSearch())],
-)
+
+def _system_instruction():
+    today = datetime.now().strftime("%A, %B %d, %Y")
+    return f"{SYSTEM_PROMPT}\n\nToday is {today}."
 
 
 def _looks_factual(message: str) -> bool:
@@ -57,23 +56,35 @@ def _looks_factual(message: str) -> bool:
     return first_word in _QUESTION_WORDS
 
 
-def generate_content_llm(message, author, conversation_context):
-    context_formatted = "\n".join(
-        f"{name}: {msg}" for name, msg in conversation_context
-    )
-    today = datetime.now().strftime("%A, %B %d, %Y")
-    prompt = f"""Today is {today}.
+def _build_contents(conversation_context):
+    """Turn (author, message) history into alternating user/model turns.
 
-Recent conversation:
-{context_formatted}
+    conversation_context's last entry is always the message to respond to;
+    passing it through structured turns (instead of flattening everything
+    into one text blob) is what keeps the model from latching onto an
+    earlier line in a long transcript instead of the actual latest message.
+    """
+    turns = []
+    for name, msg in conversation_context:
+        role = "model" if name == "Aigis" else "user"
+        text = msg if role == "model" else f"{name}: {msg}"
+        if turns and turns[-1].role == role:
+            turns[-1].parts[0].text += f"\n{text}"
+        else:
+            turns.append(types.Content(role=role, parts=[types.Part(text=text)]))
+    return turns
 
-{author}: {message}
 
-Respond to the above."""
-    print(f"[llm] Prompt: {prompt}")
+def generate_content_llm(message, conversation_context):
+    contents = _build_contents(conversation_context)
+    print(f"[llm] Contents: {contents}")
 
     grounded = _looks_factual(message)
-    config = GROUNDED_CONFIG if grounded else BASE_CONFIG
+    system_instruction = _system_instruction()
+    config = types.GenerateContentConfig(
+        system_instruction=system_instruction,
+        tools=[types.Tool(google_search=types.GoogleSearch())] if grounded else None,
+    )
     if grounded:
         print("[llm] Looks like a factual question, enabling search grounding")
 
@@ -81,7 +92,7 @@ Respond to the above."""
         try:
             response = client.models.generate_content(
                 model=model,
-                contents=prompt,
+                contents=contents,
                 config=config,
             )
             if response and getattr(response, "text", None):

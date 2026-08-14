@@ -106,7 +106,6 @@ async def handle_ai_response(message):
         llm_data = await asyncio.to_thread(
             llm.generate_content_llm,
             message.content,
-            message.author.display_name,
             state.conversation_context[channel_id],
         )
         state.add_to_context(channel_id, "Aigis", llm_data)
