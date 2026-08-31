@@ -7,7 +7,7 @@ load_dotenv()
 TOKEN: str = os.getenv("DISCORD_TOKEN")  # type: ignore[assignment]
 
 ZYBOT_ID = 1460308838879072266
-CHANNEL_IDS = {"git-commits": 1467708228917002431, "aigis-output": 1494663155421282374}
+CHANNEL_IDS = {"git-commits": 1543777047455862784, "aigis-output": 1494663155421282374}
 ROLE_IDS = {"oomfie": 1452611489574944800}
 
 SEND_GIT_COMMITS = True
