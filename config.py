@@ -1,10 +1,13 @@
 import os
+import re
 
 from dotenv import load_dotenv
 
-load_dotenv()
+_ = load_dotenv()
 
-TOKEN: str = os.getenv("DISCORD_TOKEN")  # type: ignore[assignment]
+TOKEN = os.getenv("DISCORD_TOKEN")
+if TOKEN is None:
+    raise RuntimeError("DISCORD_TOKEN environment variable is not set")
 
 ZYBOT_ID = 1460308838879072266
 CHANNEL_IDS = {"git-commits": 1543777047455862784, "aigis-output": 1494663155421282374}
@@ -28,7 +31,7 @@ EMBED_LINKS = [
 
 CHANNELS_TO_COUNT = {"art": "art", "yaoi": "art", "yuri": "yuri"}
 
-URL_REGEX = __import__("re").compile(r"https?://\S+")
+URL_REGEX = re.compile(r"https?://\S+")
 
 SYSTEM_PROMPT = """
 You are Aigis, the android from Persona 3, hanging out in an oomfie (twitter mutuals) discord server.

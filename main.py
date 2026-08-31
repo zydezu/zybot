@@ -147,7 +147,7 @@ async def on_message(message):
     if should_respond:
         await handle_ai_response(message)
 
-    if message.channel.name == "general" and not message.reference:
+    if message.channel.name == "chat" and not message.reference:
         rand = random.random()
 
         if rand < 0.002:

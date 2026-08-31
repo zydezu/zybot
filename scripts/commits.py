@@ -26,9 +26,11 @@ def get_repos(github_username, headers):
     return requests.get(url, headers=headers).json()
 
 
-def get_commits(owner, repo_name, headers):
+def get_commits(owner, repo_name, headers, github_username):
     url = f"https://api.github.com/repos/{owner}/{repo_name}/commits"
-    commits = requests.get(url, headers=headers).json()
+    commits = requests.get(
+        url, headers=headers, params={"author": github_username}
+    ).json()
     if not isinstance(commits, list):
         return []
     return [
@@ -77,9 +79,16 @@ def get_releases(owner, repo_name, headers):
 
 
 def get_org_repos(github_username, headers):
-    orgs = requests.get(
-        f"https://api.github.com/users/{github_username}/orgs", headers=headers
-    ).json()
+    # /users/{username}/orgs only returns *public* org memberships, even when
+    # authenticated. /user/orgs (the authenticated user) also includes private
+    # ones, so use it whenever we have a token.
+    if headers.get("Authorization"):
+        orgs_url = "https://api.github.com/user/orgs"
+    else:
+        orgs_url = f"https://api.github.com/users/{github_username}/orgs"
+    orgs = requests.get(orgs_url, headers=headers).json()
+    if not isinstance(orgs, list):
+        return []
     org_repos = []
     for org in orgs:
         org_repos.extend(requests.get(org.get("repos_url"), headers=headers).json())
@@ -91,6 +100,7 @@ def _process_repo(
     owner,
     repo_id,
     headers,
+    github_username,
     seen_repos,
     seen_releases,
     new_shas,
@@ -101,7 +111,7 @@ def _process_repo(
     new_repo_embeds,
 ):
     repo_name = repo.get("name")
-    commits = get_commits(owner, repo_name, headers)
+    commits = get_commits(owner, repo_name, headers, github_username)
 
     # hacky way to stop the creation of forks flooding chat
     if repo_id not in seen_repos:
@@ -167,6 +177,7 @@ def check_commits(github_token, github_username):
 
     process_args = (
         headers,
+        github_username,
         seen_repos,
         seen_releases,
         new_shas,
