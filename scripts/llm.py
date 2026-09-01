@@ -1,5 +1,6 @@
 import os
 import time
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -82,6 +83,35 @@ def get_server_status(server: str) -> str:
     )
 
 
+def get_recent_tweets(count: int = 10) -> str:
+    """Get zy's most recent tweets/posts from Twitter/X, to answer questions
+    about what he's been posting or talking about there.
+
+    Args:
+        count: how many recent tweets to fetch, defaults to 10, max 20.
+    """
+    rss_url = os.getenv("TWITTER_RSS_URL")
+    if not rss_url:
+        return "twitter feed isn't configured"
+
+    count = max(1, min(count, 20))
+    try:
+        response = requests.get(rss_url, timeout=10)
+        response.raise_for_status()
+        root = ET.fromstring(response.content)
+    except Exception as e:
+        return f"couldn't fetch tweets right now: {e}"
+
+    items = root.findall("./channel/item")[:count]
+    if not items:
+        return "no tweets found"
+
+    return "\n".join(
+        f"[{item.findtext('pubDate', '').strip()}] {item.findtext('title', '').strip()}"
+        for item in items
+    )
+
+
 def search_web(query: str) -> str:
     """Search the web for current information you don't already know.
 
@@ -113,9 +143,10 @@ def _system_instruction():
         f"Right now it's {now.strftime('%A, %B %d, %Y')}, "
         f"{now.strftime('%-I:%M %p')} (UK time, this server's clock). "
         "You have tools to search the web, check the time anywhere else in "
-        "the world, and check live metrics for zy's home servers (basil and "
-        "sunny) — actually use them when a question depends on current or "
-        "real information instead of guessing, but don't mention the tools "
+        "the world, check live metrics for zy's home servers (basil and "
+        "sunny), and check zy's recent tweets — actually use them when a "
+        "question depends on current or real information instead of "
+        "guessing, but don't mention the tools "
         "themselves or that you looked something up. If the conversation is "
         "about the servers' status/health/metrics, mention that more detail "
         "is at [status.boysare.moe](<https://status.boysare.moe>) — as an "
@@ -183,7 +214,7 @@ def generate_content_llm(conversation_context):
     _log_request(contents)
 
     system_instruction = _system_instruction()
-    tools = [search_web, get_current_time, get_server_status]
+    tools = [search_web, get_current_time, get_server_status, get_recent_tweets]
     base_turn_count = len(contents)
 
     for model in MODELS:
