@@ -169,9 +169,12 @@ def find_artwork(tags: str, rating: str = "s") -> str:
 
     This account can only search with up to two tags at a time, so
     translate whatever's being asked for into at most two real danbooru
-    tags — lowercase, underscores instead of spaces, using danbooru's own
+    tags - lowercase, underscores instead of spaces, using danbooru's own
     tagging conventions rather than plain English (eg. "1girl" not "girl",
     "cat_ears", "izumi_konata" for a character, a series name for a show).
+    Character tags are surname_given_name (Japanese name order), not the
+    western given_name_surname order - eg. "ikari_shinji", not
+    "shinji_ikari"; swap a western-ordered name around before using it.
 
     Args:
         tags: one or two danbooru tags, space separated.
@@ -218,14 +221,18 @@ def _system_instruction():
         "the image; a short in-character line before it is fine. These are "
         "not optional extras: if a "
         "question is about any of those things — his weight, his sleep, a server's "
-        "status, what he's tweeted — you MUST call the matching tool and "
-        "answer from its actual result, every single time you're asked, "
-        "even if you or someone else already said a number for it earlier "
-        "in this conversation — that earlier number could easily have been "
-        "wrong or outdated, so call the tool fresh again rather than "
-        "repeating it. Never invent or estimate a number or fact you could "
-        "have looked up; if a tool fails or you can't call it, say you "
-        "don't know instead of guessing. Don't mention the tools "
+        "status, what he's tweeted, or finding a picture/fan art — you MUST "
+        "call the matching tool and answer from its actual result, every "
+        "single time you're asked, even if you or someone else already said "
+        "a number or URL for it earlier in this conversation — that earlier "
+        "answer could easily have been wrong or outdated, so call the tool "
+        "fresh again rather than repeating it. Never invent or estimate a "
+        "number, fact, or URL you could have looked up instead — this "
+        "especially means never making up an image URL yourself; the only "
+        "URL you're ever allowed to put in a reply for a picture is one "
+        "find_artwork actually just returned to you. If a tool fails, "
+        "returns no results, or you can't call it, say so plainly instead "
+        "of guessing. Don't mention the tools "
         "themselves or that you looked something up. If the conversation is "
         "about the servers' status/health/metrics, mention that more detail "
         "is at [status.boysare.moe](<https://status.boysare.moe>) — as an "
