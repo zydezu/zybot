@@ -82,6 +82,30 @@ def get_server_status(server: str) -> str:
     )
 
 
+def search_web(query: str) -> str:
+    """Search the web for current information you don't already know.
+
+    Args:
+        query: what to search for.
+    """
+    # Gemini is stupid
+    for model in MODELS:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=query,
+                config=types.GenerateContentConfig(
+                    tools=[types.Tool(google_search=types.GoogleSearch())],
+                ),
+            )
+        except Exception as e:
+            _log(f"[llm]     search_web: {model} failed: {e}")
+            continue
+        if response and getattr(response, "text", None):
+            return response.text.strip()
+    return "search is down right now, couldn't find anything"
+
+
 def _system_instruction():
     now = datetime.now(ZoneInfo(DEFAULT_TIMEZONE))
     return (
@@ -132,7 +156,7 @@ def _log_request(contents):
 
 def _log_tool_activity(response, base_turn_count):
     """Log every tool call/result the SDK's automatic function calling made
-    while producing this response, plus any Google Search grounding it used."""
+    while producing this response."""
     history = getattr(response, "automatic_function_calling_history", None)
     for turn in (history or [])[base_turn_count:]:
         for part in turn.parts or []:
@@ -146,13 +170,6 @@ def _log_tool_activity(response, base_turn_count):
                     f"{_preview(str(part.function_response.response))}"
                 )
 
-    grounding = (
-        response.candidates[0].grounding_metadata if response.candidates else None
-    )
-    queries = getattr(grounding, "web_search_queries", None)
-    if queries:
-        _log(f"[llm]   web search: {queries}")
-
 
 def generate_content_llm(conversation_context):
     contents = _build_contents(conversation_context)
@@ -161,11 +178,7 @@ def generate_content_llm(conversation_context):
     _log_request(contents)
 
     system_instruction = _system_instruction()
-    tools = [
-        types.Tool(google_search=types.GoogleSearch()),
-        get_current_time,
-        get_server_status,
-    ]
+    tools = [search_web, get_current_time, get_server_status]
     base_turn_count = len(contents)
 
     for model in MODELS:
