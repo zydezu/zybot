@@ -47,8 +47,7 @@ class BotState:
 
     @staticmethod
     def _load_context():
-        # Conversation memory used to live only in process memory, so every
-        # restart/redeploy wiped it - reload it from disk so it survives.
+        # Conversation memory saved to disk, reload it so it survives
         try:
             with open(CONVERSATION_CONTEXT_PATH, "r", encoding="utf8") as f:
                 raw = json.load(f)

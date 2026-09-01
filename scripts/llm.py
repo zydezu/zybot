@@ -94,9 +94,7 @@ def _build_contents(conversation_context):
     """Turn (author, message) history into alternating user/model turns.
 
     conversation_context's last entry is always the message to respond to;
-    passing it through structured turns (instead of flattening everything
-    into one text blob) is what keeps the model from latching onto an
-    earlier line in a long transcript instead of the actual latest message.
+    passing it through structured turns
     """
     turns = []
     for name, msg in conversation_context:
@@ -107,11 +105,7 @@ def _build_contents(conversation_context):
         else:
             turns.append(types.Content(role=role, parts=[types.Part(text=text)]))
 
-    # The API rejects any request whose history doesn't start on a user
-    # turn. Once the rolling context window trims its oldest entry, that's
-    # exactly a coin flip away from happening on every other message - every
-    # such request silently failed on every model, which looked like broken
-    # memory rather than one malformed request.
+    # The API rejects any request whose history doesn't start on a user turn
     while turns and turns[0].role == "model":
         turns.pop(0)
 
@@ -145,9 +139,7 @@ def generate_content_llm(conversation_context):
                 return response.text.strip()
         except Exception as e:
             print(f"[llm] {model} failed with tools: {e}")
-            # Some fallback models (eg. the gemma ones) don't support search
-            # grounding or function calling at all - give the model one more
-            # try bare before writing it off entirely.
+            # Some fallback models don't support search or functions
             try:
                 response = client.models.generate_content(
                     model=model,
