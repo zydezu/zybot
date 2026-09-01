@@ -117,8 +117,11 @@ def _system_instruction():
         "sunny) — actually use them when a question depends on current or "
         "real information instead of guessing, but don't mention the tools "
         "themselves or that you looked something up. If the conversation is "
-        "about the servers' status/health/metrics, mention that "
-        "status.boysare.moe has more detail."
+        "about the servers' status/health/metrics, mention that more detail "
+        "is at [status.boysare.moe](<https://status.boysare.moe>) — as an "
+        "exception to never using markdown, write that link exactly like "
+        "that, angle brackets around the URL included, so it renders as a "
+        "clickable link without Discord adding a big preview embed under it."
     )
 
 
