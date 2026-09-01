@@ -83,6 +83,32 @@ def get_server_status(server: str) -> str:
     )
 
 
+def get_health_status() -> str:
+    """Get zy's recent weight and sleep tracking (from his smartwatch), to
+    answer questions about his weight, sleep, or naps."""
+    try:
+        data = requests.get("https://status.boysare.moe/health", timeout=5).json()
+    except Exception as e:
+        return f"couldn't reach health data right now: {e}"
+    if "error" in data:
+        return f"no health data available: {data['error']}"
+
+    def _format_day(day):
+        parts = [day["date"]]
+        if "weight_kg" in day:
+            parts.append(f"weight {day['weight_kg']}kg")
+        if "sleep" in day:
+            s = day["sleep"]
+            parts.append(f"slept {s['hours']}h ({s['from']}-{s['to']})")
+        if "naps" in day:
+            nap_hours = sum(n["hours"] for n in day["naps"].values())
+            parts.append(f"napped {nap_hours:.1f}h")
+        return ", ".join(parts)
+
+    days = [data["current"]] + data.get("previous", [])[:6]
+    return "; ".join(_format_day(day) for day in days)
+
+
 def get_recent_tweets(count: int = 10) -> str:
     """Get zy's most recent tweets/posts from Twitter/X, to answer questions
     about what he's been posting or talking about there.
@@ -143,10 +169,22 @@ def _system_instruction():
         f"Right now it's {now.strftime('%A, %B %d, %Y')}, "
         f"{now.strftime('%-I:%M %p')} (UK time, this server's clock). "
         "You have tools to search the web, check the time anywhere else in "
-        "the world, check live metrics for zy's home servers (basil and "
-        "sunny), and check zy's recent tweets — actually use them when a "
-        "question depends on current or real information instead of "
-        "guessing, but don't mention the tools "
+        "the world, check live metrics for zy's home servers (basil, "
+        "sunny and maeno), check zy's recent tweets, check zy's recent weight/sleep "
+        "tracking, and pull up the actual recent message history in this "
+        "Discord channel — use that last one when asked to summarize the "
+        "chat, catch someone up on what they missed, or recap what's been "
+        "discussed, rather than relying on your own patchy memory of just "
+        "the messages directed at you. These are not optional extras: if a "
+        "question is about any of those things — his weight, his sleep, a server's "
+        "status, what he's tweeted — you MUST call the matching tool and "
+        "answer from its actual result, every single time you're asked, "
+        "even if you or someone else already said a number for it earlier "
+        "in this conversation — that earlier number could easily have been "
+        "wrong or outdated, so call the tool fresh again rather than "
+        "repeating it. Never invent or estimate a number or fact you could "
+        "have looked up; if a tool fails or you can't call it, say you "
+        "don't know instead of guessing. Don't mention the tools "
         "themselves or that you looked something up. If the conversation is "
         "about the servers' status/health/metrics, mention that more detail "
         "is at [status.boysare.moe](<https://status.boysare.moe>) — as an "
@@ -207,14 +245,21 @@ def _log_tool_activity(response, base_turn_count):
                 )
 
 
-def generate_content_llm(conversation_context):
+def generate_content_llm(conversation_context, extra_tools=None):
     contents = _build_contents(conversation_context)
     if not contents:
         return "..."
     _log_request(contents)
 
     system_instruction = _system_instruction()
-    tools = [search_web, get_current_time, get_server_status, get_recent_tweets]
+    tools = [
+        search_web,
+        get_current_time,
+        get_server_status,
+        get_recent_tweets,
+        get_health_status,
+        *(extra_tools or []),
+    ]
     base_turn_count = len(contents)
 
     for model in MODELS:

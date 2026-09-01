@@ -47,7 +47,6 @@ class BotState:
 
     @staticmethod
     def _load_context():
-        # Conversation memory saved to disk, reload it so it survives
         try:
             with open(CONVERSATION_CONTEXT_PATH, "r", encoding="utf8") as f:
                 raw = json.load(f)
@@ -122,13 +121,46 @@ async def on_member_join(member):
         )
 
 
+async def _fetch_channel_history(channel, limit):
+    messages = [msg async for msg in channel.history(limit=limit)]
+    messages.reverse()
+    return [f"{m.author.display_name}: {m.content}" for m in messages if m.content]
+
+
+def _make_summarize_chat_tool(channel, loop):
+    def summarize_chat(limit: int = 50) -> str:
+        """Get the actual recent message history from this Discord channel,
+        to summarize what's been discussed or catch someone up on what they
+        missed. This is real chat history, unlike your own conversation
+        memory which only has messages directed at you.
+
+        Args:
+            limit: how many recent messages to fetch, defaults to 50, max 200.
+        """
+        limit = max(5, min(limit, 200))
+        future = asyncio.run_coroutine_threadsafe(
+            _fetch_channel_history(channel, limit), loop
+        )
+        try:
+            history = future.result(timeout=10)
+        except Exception as e:
+            return f"couldn't fetch chat history: {e}"
+        return "\n".join(history) if history else "no messages found"
+
+    return summarize_chat
+
+
 async def handle_ai_response(message):
     channel_id = message.channel.id
     state.add_to_context(channel_id, message.author.display_name, message.content)
     async with message.channel.typing():
+        summarize_chat = _make_summarize_chat_tool(
+            message.channel, asyncio.get_running_loop()
+        )
         llm_data = await asyncio.to_thread(
             llm.generate_content_llm,
             state.conversation_context[channel_id],
+            [summarize_chat],
         )
         state.add_to_context(channel_id, "Aigis", llm_data)
         try:
