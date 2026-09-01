@@ -182,11 +182,12 @@ async def on_message(message):
                 pass
         elif rand < 0.04:
             print("[main] Sending a random Lucky Star image from danbooru")
-            image_url = await asyncio.to_thread(
+            result = await asyncio.to_thread(
                 danboorusearch.get_image_url,
                 os.getenv("DANBOORU_USERNAME"),
                 os.getenv("DANBOORU_API_KEY"),
             )
+            image_url, _post_url = result if result else (None, None)
             if image_url and not state.check_duplicate_image(image_url):
                 try:
                     await message.channel.send(image_url)

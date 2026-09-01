@@ -1,1 +1,1 @@
-https://github.com/zydezu/zybot.git
+git@github.com:zydezu/zybot.git

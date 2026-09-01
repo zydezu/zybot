@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -27,6 +28,11 @@ MODELS = [
 ]
 
 DEFAULT_TIMEZONE = "Europe/London"
+
+
+def _log(msg):
+    # show logs in journalctl/systemctl status
+    print(msg, flush=True)
 
 
 def get_current_time(timezone: str = DEFAULT_TIMEZONE) -> str:
@@ -112,11 +118,47 @@ def _build_contents(conversation_context):
     return turns
 
 
+def _preview(text, limit=200):
+    text = text.replace("\n", " \\n ")
+    return text if len(text) <= limit else text[:limit] + "…"
+
+
+def _log_request(contents):
+    _log(f"[llm] --- new request: {len(contents)} turn(s) ---")
+    for turn in contents:
+        text = turn.parts[0].text if turn.parts else ""
+        _log(f"[llm]   {turn.role}: {_preview(text)}")
+
+
+def _log_tool_activity(response, base_turn_count):
+    """Log every tool call/result the SDK's automatic function calling made
+    while producing this response, plus any Google Search grounding it used."""
+    history = getattr(response, "automatic_function_calling_history", None)
+    for turn in (history or [])[base_turn_count:]:
+        for part in turn.parts or []:
+            if part.function_call:
+                _log(
+                    f"[llm]   tool call: {part.function_call.name}({part.function_call.args})"
+                )
+            if part.function_response:
+                _log(
+                    f"[llm]   tool result: {part.function_response.name} -> "
+                    f"{_preview(str(part.function_response.response))}"
+                )
+
+    grounding = (
+        response.candidates[0].grounding_metadata if response.candidates else None
+    )
+    queries = getattr(grounding, "web_search_queries", None)
+    if queries:
+        _log(f"[llm]   web search: {queries}")
+
+
 def generate_content_llm(conversation_context):
     contents = _build_contents(conversation_context)
     if not contents:
         return "..."
-    print(f"[llm] Contents: {contents}")
+    _log_request(contents)
 
     system_instruction = _system_instruction()
     tools = [
@@ -124,8 +166,10 @@ def generate_content_llm(conversation_context):
         get_current_time,
         get_server_status,
     ]
+    base_turn_count = len(contents)
 
     for model in MODELS:
+        start = time.monotonic()
         try:
             response = client.models.generate_content(
                 model=model,
@@ -135,11 +179,25 @@ def generate_content_llm(conversation_context):
                     tools=tools,
                 ),
             )
+            elapsed = time.monotonic() - start
+            _log_tool_activity(response, base_turn_count)
             if response and getattr(response, "text", None):
-                return response.text.strip()
+                text = response.text.strip()
+                _log(f"[llm] {model} responded in {elapsed:.2f}s: {_preview(text)}")
+                return text
+            _log(
+                f"[llm] {model} returned no text after {elapsed:.2f}s, trying next model"
+            )
         except Exception as e:
-            print(f"[llm] {model} failed with tools: {e}")
+            elapsed = time.monotonic() - start
+            _log(f"[llm] {model} failed with tools after {elapsed:.2f}s: {e}")
+
+            if getattr(e, "code", None) == 429:
+                # Out of quota
+                continue
+
             # Some fallback models don't support search or functions
+            start = time.monotonic()
             try:
                 response = client.models.generate_content(
                     model=model,
@@ -148,13 +206,22 @@ def generate_content_llm(conversation_context):
                         system_instruction=system_instruction
                     ),
                 )
+                elapsed = time.monotonic() - start
                 if response and getattr(response, "text", None):
-                    return response.text.strip()
+                    text = response.text.strip()
+                    _log(
+                        f"[llm] {model} (no tools) responded in {elapsed:.2f}s: {_preview(text)}"
+                    )
+                    return text
+                _log(f"[llm] {model} (no tools) returned no text after {elapsed:.2f}s")
             except Exception as e2:
-                print(f"[llm] {model} failed without tools too: {e2}")
+                elapsed = time.monotonic() - start
+                _log(
+                    f"[llm] {model} failed without tools too after {elapsed:.2f}s: {e2}"
+                )
             continue
 
-    print("[llm] No available models to use!")
+    _log("[llm] No available models to use!")
     return (
         "this idiot ran out of rate limits (or google didnt like what you typed). "
         "please pay us $1200 for ooomfieeee claudee roleplayyy~~~"
