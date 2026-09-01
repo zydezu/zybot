@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+import scripts.danboorusearch as danboorusearch
 from config import SYSTEM_PROMPT
 
 load_dotenv()
@@ -57,14 +58,14 @@ def get_current_time(timezone: str = DEFAULT_TIMEZONE) -> str:
 
 
 def get_server_status(server: str) -> str:
-    """Get live metrics (CPU/RAM/disk/uptime/power draw) for one of zy's home servers.
+    """Get live metrics (CPU/RAM/disk/uptime/power draw) for one of alex's home servers.
 
     Args:
-        server: which box to check, either "basil" or "sunny".
+        server: which box to check, either "basil", "sunny", or "maeno".
     """
     server = server.strip().lower()
-    if server not in ("basil", "sunny"):
-        return "no server called that, it's either 'basil' or 'sunny'"
+    if server not in ("basil", "sunny", "maeno"):
+        return "no server called that, it's either 'basil', 'sunny', or 'maeno'"
 
     try:
         data = requests.get(f"https://status.boysare.moe/{server}", timeout=5).json()
@@ -84,7 +85,7 @@ def get_server_status(server: str) -> str:
 
 
 def get_health_status() -> str:
-    """Get zy's recent weight and sleep tracking (from his smartwatch), to
+    """Get alex's recent weight and sleep tracking (from his smartwatch), to
     answer questions about his weight, sleep, or naps."""
     try:
         data = requests.get("https://status.boysare.moe/health", timeout=5).json()
@@ -110,7 +111,7 @@ def get_health_status() -> str:
 
 
 def get_recent_tweets(count: int = 10) -> str:
-    """Get zy's most recent tweets/posts from Twitter/X, to answer questions
+    """Get alex's most recent tweets/posts from Twitter/X, to answer questions
     about what he's been posting or talking about there.
 
     Args:
@@ -162,6 +163,40 @@ def search_web(query: str) -> str:
     return "search is down right now, couldn't find anything"
 
 
+def find_artwork(tags: str, rating: str = "s") -> str:
+    """Find fan art / anime art on Danbooru matching a description, to
+    share a picture instead of just describing one.
+
+    This account can only search with up to two tags at a time, so
+    translate whatever's being asked for into at most two real danbooru
+    tags — lowercase, underscores instead of spaces, using danbooru's own
+    tagging conventions rather than plain English (eg. "1girl" not "girl",
+    "cat_ears", "izumi_konata" for a character, a series name for a show).
+
+    Args:
+        tags: one or two danbooru tags, space separated.
+        rating: content rating to search within — "s" (safe), "q"
+            (questionable), or "e" (explicit). Defaults to "s".
+    """
+    username = os.getenv("DANBOORU_USERNAME")
+    api_key = os.getenv("DANBOORU_API_KEY")
+    if not username or not api_key:
+        return "danbooru isn't configured"
+
+    query = " ".join(tags.split()[:2])
+    rating = rating if rating in ("s", "q", "e") else "s"
+    try:
+        result = danboorusearch.get_image_url(
+            username, api_key, query=query, rating=rating
+        )
+    except Exception as e:
+        return f"danbooru search failed: {e}"
+    if not result:
+        return f"no results found for tags: {query}"
+    image_url, _post_url = result
+    return image_url
+
+
 def _system_instruction():
     now = datetime.now(ZoneInfo(DEFAULT_TIMEZONE))
     return (
@@ -169,13 +204,19 @@ def _system_instruction():
         f"Right now it's {now.strftime('%A, %B %d, %Y')}, "
         f"{now.strftime('%-I:%M %p')} (UK time, this server's clock). "
         "You have tools to search the web, check the time anywhere else in "
-        "the world, check live metrics for zy's home servers (basil, "
-        "sunny and maeno), check zy's recent tweets, check zy's recent weight/sleep "
-        "tracking, and pull up the actual recent message history in this "
-        "Discord channel — use that last one when asked to summarize the "
-        "chat, catch someone up on what they missed, or recap what's been "
-        "discussed, rather than relying on your own patchy memory of just "
-        "the messages directed at you. These are not optional extras: if a "
+        "the world, check live metrics for alex's home servers (basil, "
+        "sunny and maeno), check alex's recent tweets, check alex's recent weight/sleep "
+        "tracking, pull up the actual recent message history in this "
+        "Discord channel, and find fan art on danbooru. Use the chat "
+        "history one when asked to summarize the chat, catch someone up on "
+        "what they missed, or recap what's been discussed, rather than "
+        "relying on your own patchy memory of just the messages directed at "
+        "you. Use find_artwork whenever someone asks you to find/post/show "
+        "a picture or fan art of something — when it returns a URL, put "
+        "that URL on its own in your reply exactly as given, with no other "
+        "text on that line and no markdown around it, so discord embeds "
+        "the image; a short in-character line before it is fine. These are "
+        "not optional extras: if a "
         "question is about any of those things — his weight, his sleep, a server's "
         "status, what he's tweeted — you MUST call the matching tool and "
         "answer from its actual result, every single time you're asked, "
@@ -258,6 +299,7 @@ def generate_content_llm(conversation_context, extra_tools=None):
         get_server_status,
         get_recent_tweets,
         get_health_status,
+        find_artwork,
         *(extra_tools or []),
     ]
     base_turn_count = len(contents)
