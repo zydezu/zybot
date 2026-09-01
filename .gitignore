@@ -11,3 +11,4 @@ seencommits.txt
 seenrepos.txt
 *.json
 *.log
+Pipfile
