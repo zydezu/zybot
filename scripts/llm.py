@@ -116,7 +116,9 @@ def _system_instruction():
         "the world, and check live metrics for zy's home servers (basil and "
         "sunny) — actually use them when a question depends on current or "
         "real information instead of guessing, but don't mention the tools "
-        "themselves or that you looked something up."
+        "themselves or that you looked something up. If the conversation is "
+        "about the servers' status/health/metrics, mention that "
+        "status.boysare.moe has more detail."
     )
 
 
