@@ -16,6 +16,7 @@ ROLE_IDS = {"oomfie": 1452611489574944800}
 SEND_GIT_COMMITS = True
 
 LUCKY_STAR_LINES_PATH = "data/luckystar/lines.txt"
+CONVERSATION_CONTEXT_PATH = "data/conversation_context.json"
 
 EMBED_LINKS = [
     ("https://reddit.com", "https://rxddit.com"),

@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import json
 import os
 import random
 from collections import defaultdict
@@ -16,6 +17,7 @@ import scripts.llm as llm
 from config import (
     CHANNEL_IDS,
     CHANNELS_TO_COUNT,
+    CONVERSATION_CONTEXT_PATH,
     LUCKY_STAR_LINES_PATH,
     ROLE_IDS,
     SEND_GIT_COMMITS,
@@ -33,18 +35,40 @@ intents.dm_messages = True
 bot = commands.Bot(command_prefix="zy!", intents=intents)
 
 
+CONTEXT_LENGTH = 40
+
+
 class BotState:
     def __init__(self):
-        self.conversation_context = defaultdict(list)
+        self.conversation_context = defaultdict(list, self._load_context())
         self.lucky_star_lines = []
         self.recent_image_hashes = []
         self.lucky_star_loaded = False
 
+    @staticmethod
+    def _load_context():
+        # Conversation memory used to live only in process memory, so every
+        # restart/redeploy wiped it - reload it from disk so it survives.
+        try:
+            with open(CONVERSATION_CONTEXT_PATH, "r", encoding="utf8") as f:
+                raw = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+        return {
+            int(channel_id): [tuple(entry) for entry in entries]
+            for channel_id, entries in raw.items()
+        }
+
+    def _save_context(self):
+        with open(CONVERSATION_CONTEXT_PATH, "w", encoding="utf8") as f:
+            json.dump(self.conversation_context, f)
+
     def add_to_context(self, channel_id, author, message):
         context = self.conversation_context[channel_id]
         context.append((author, message))
-        if len(context) > 25:
+        if len(context) > CONTEXT_LENGTH:
             context.pop(0)
+        self._save_context()
 
     def get_lucky_star_line(self):
         if not self.lucky_star_loaded:
@@ -105,7 +129,6 @@ async def handle_ai_response(message):
     async with message.channel.typing():
         llm_data = await asyncio.to_thread(
             llm.generate_content_llm,
-            message.content,
             state.conversation_context[channel_id],
         )
         state.add_to_context(channel_id, "Aigis", llm_data)
