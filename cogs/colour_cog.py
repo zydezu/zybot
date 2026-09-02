@@ -32,14 +32,14 @@ class ColourCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(
-        name="colour",
+        name="add-colour",
         description="Give yourself a role in the colour/color you pick (hex or CSS colour name)",
     )
     @app_commands.describe(
         colour='A hex code like "#ff8800" or "f80", a CSS name like "cornflowerblue", or "rgb(0,120,255)"'
     )
     @app_commands.guild_only()
-    async def colour(self, interaction: discord.Interaction, colour: str):
+    async def add_colour(self, interaction: discord.Interaction, colour: str):
         parsed = parse_colour(colour)
         if parsed is None:
             await interaction.response.send_message(
@@ -80,9 +80,16 @@ class ColourCog(commands.Cog):
         target_position = max(1, me.top_role.position - 1)
         if role.position != target_position:
             try:
-                await role.edit(position=target_position)
-            except (discord.Forbidden, discord.HTTPException):
-                pass
+                # edit_role_positions is the bulk endpoint and actually moves
+                # the role; Role.edit(position=...) can silently no-op.
+                await guild.edit_role_positions({role: target_position})
+            except (discord.Forbidden, discord.HTTPException) as exc:
+                print(f"[main] Couldn't move {role.name} to position {target_position}: {exc}")
+
+        # A bot can never place a role above its own highest role, so if my role
+        # isn't at the very top of the list the colour role can't be either.
+        highest = max(guild.roles, key=lambda r: r.position)
+        not_at_top = me.top_role.id != highest.id
 
         member = interaction.user
         old_roles = [
@@ -106,8 +113,54 @@ class ColourCog(commands.Cog):
         embed, file = embed_module.show_colour_role(
             hex_color, rgb, role, member.display_name, created
         )
+        content = None
+        if not_at_top:
+            content = (
+                f"Note: move my **{me.top_role.name}** role to the top of "
+                "Server Settings → Roles so colour roles can sit above the rest."
+            )
         try:
-            await interaction.followup.send(embed=embed, file=file)
+            await interaction.followup.send(content=content, embed=embed, file=file)
+        except aiohttp.ClientConnectionResetError:
+            pass
+
+    @app_commands.command(
+        name="remove-colour",
+        description="Remove the colour role you gave yourself",
+    )
+    @app_commands.guild_only()
+    async def remove_colour(self, interaction: discord.Interaction):
+        member = interaction.user
+        colour_roles = [
+            r for r in member.roles if r.name.startswith(COLOUR_ROLE_PREFIX)
+        ]
+        if not colour_roles:
+            await interaction.response.send_message(
+                "You don't have a colour role.", ephemeral=True
+            )
+            return
+
+        if not interaction.guild.me.guild_permissions.manage_roles:
+            await interaction.response.send_message(
+                "I need the **Manage Roles** permission to do that.", ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        await member.remove_roles(*colour_roles, reason="Removing colour role")
+
+        # Clean up colour roles nobody is using anymore.
+        for r in colour_roles:
+            if not [m for m in r.members if m.id != member.id]:
+                try:
+                    await r.delete(reason="Unused colour role")
+                except (discord.Forbidden, discord.HTTPException):
+                    pass
+
+        names = ", ".join(f"`{r.name}`" for r in colour_roles)
+        try:
+            await interaction.followup.send(f"Removed {names}.", ephemeral=True)
         except aiohttp.ClientConnectionResetError:
             pass
 
