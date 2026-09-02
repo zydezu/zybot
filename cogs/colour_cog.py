@@ -73,8 +73,14 @@ class ColourCog(commands.Cog):
                 reason=f"Colour role requested by {interaction.user}",
             )
             created = True
+
+        # Keep colour roles as high as possible (just under my top role, which
+        # is as far up as Discord lets me move them) so the colour actually
+        # shows. Do this for existing roles too, not just freshly created ones.
+        target_position = max(1, me.top_role.position - 1)
+        if role.position != target_position:
             try:
-                await role.edit(position=max(1, me.top_role.position - 1))
+                await role.edit(position=target_position)
             except (discord.Forbidden, discord.HTTPException):
                 pass
 
