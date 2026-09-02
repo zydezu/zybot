@@ -2,6 +2,7 @@ import io
 from datetime import datetime
 
 import discord
+from PIL import Image
 
 
 class EMBED:
@@ -62,7 +63,9 @@ def show_new_release(
     if assets_count is not None:
         embed.add_field(name="Assets", value=str(assets_count), inline=True)
     if zipball_url:
-        embed.add_field(name="Download", value=f"[Source zip]({zipball_url})", inline=True)
+        embed.add_field(
+            name="Download", value=f"[Source zip]({zipball_url})", inline=True
+        )
 
     parsed_date = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
     formatted_date = parsed_date.strftime("%Y-%m-%d at %H:%M %Z")
@@ -84,6 +87,24 @@ def show_accent_colour(hex_color, color_image):
     embed.set_image(url="attachment://color.png")
 
     file = discord.File(image_bytes, filename="color.png")
+    return embed, file
+
+
+def show_colour_role(hex_color, rgb, role, actor, created):
+    embed = discord.Embed(
+        title="Colour role created" if created else "Colour role applied",
+        description=f"{role.mention} - **{hex_color}** · `rgb{tuple(rgb)}`",
+        color=int(hex_color.lstrip("#"), 16),
+    )
+
+    swatch = Image.new("RGB", (300, 100), tuple(rgb))
+    image_bytes = io.BytesIO()
+    swatch.save(image_bytes, format="PNG")
+    image_bytes.seek(0)
+    embed.set_image(url="attachment://colour.png")
+    embed.set_footer(text=f"Requested by {actor}")
+
+    file = discord.File(image_bytes, filename="colour.png")
     return embed, file
 
 
