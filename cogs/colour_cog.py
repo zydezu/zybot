@@ -33,7 +33,7 @@ class ColourCog(commands.Cog):
 
     @app_commands.command(
         name="colour",
-        description="Give yourself a role in the colour you pick (hex or CSS colour name)",
+        description="Give yourself a role in the colour/color you pick (hex or CSS colour name)",
     )
     @app_commands.describe(
         colour='A hex code like "#ff8800" or "f80", a CSS name like "cornflowerblue", or "rgb(0,120,255)"'
