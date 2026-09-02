@@ -15,7 +15,12 @@ from config import SYSTEM_PROMPT
 load_dotenv()
 
 os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
-client = genai.Client()
+
+# Cap every API call. Without this the SDK will happily sit on a stalled
+# connection for minutes (seen: a 503 that took 288s to come back) while the
+# bot shows a "typing…" indicator the whole time. Value is in milliseconds.
+REQUEST_TIMEOUT_MS = 25_000
+client = genai.Client(http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS))
 
 # Ordered smartest/newest first; each is tried in turn on rate limit or error.
 MODELS = [
@@ -35,6 +40,15 @@ DEFAULT_TIMEZONE = "Europe/London"
 def _log(msg):
     # show logs in journalctl/systemctl status
     print(msg, flush=True)
+
+
+def _is_transient(e):
+    """True for timeouts / connection resets — a same-model retry won't help."""
+    text = f"{type(e).__name__} {e}".lower()
+    return any(
+        s in text
+        for s in ("timeout", "timed out", "deadline", "unavailable", "connection")
+    )
 
 
 def get_current_time(timezone: str = DEFAULT_TIMEZONE) -> str:
@@ -145,8 +159,8 @@ def search_web(query: str) -> str:
     Args:
         query: what to search for.
     """
-    # Gemini is stupid
-    for model in MODELS:
+    # Gemini is stupid. Only try a couple of models
+    for model in MODELS[:2]:
         try:
             response = client.models.generate_content(
                 model=model,
@@ -320,6 +334,11 @@ def generate_content_llm(conversation_context, extra_tools=None):
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     tools=tools,
+                    # Each remote call is a full model round-trip; without a
+                    # cap a tool-happy model can stack these for a minute+.
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        maximum_remote_calls=4
+                    ),
                 ),
             )
             elapsed = time.monotonic() - start
@@ -335,8 +354,10 @@ def generate_content_llm(conversation_context, extra_tools=None):
             elapsed = time.monotonic() - start
             _log(f"[llm] {model} failed with tools after {elapsed:.2f}s: {e}")
 
-            if getattr(e, "code", None) == 429:
-                # Out of quota
+            # Quota (429) or the model itself being unavailable/overloaded
+            # (503) or a timeout won't be helped by retrying the same model
+            # without tools - that's just a second slow failure. Move on.
+            if getattr(e, "code", None) in (429, 500, 503) or _is_transient(e):
                 continue
 
             # Some fallback models don't support search or functions
