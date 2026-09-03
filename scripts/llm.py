@@ -37,6 +37,15 @@ MODELS = [
 DEFAULT_TIMEZONE = "Europe/London"
 
 
+def _thinking_config(model):
+    """♪ we dont want thinking, because it is not endearing ♪"""
+    if model.startswith("gemma"):
+        return None  # no thinking
+    if model.startswith("gemini-3"):
+        return types.ThinkingConfig(thinking_level="low")
+    return types.ThinkingConfig(thinking_budget=0)  # 2.5-era: off entirely
+
+
 def _log(msg):
     # show logs in journalctl/systemctl status
     print(msg, flush=True)
@@ -167,6 +176,7 @@ def search_web(query: str) -> str:
                 contents=query,
                 config=types.GenerateContentConfig(
                     tools=[types.Tool(google_search=types.GoogleSearch())],
+                    thinking_config=_thinking_config(model),
                 ),
             )
         except Exception as e:
@@ -334,10 +344,11 @@ def generate_content_llm(conversation_context, extra_tools=None):
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     tools=tools,
+                    thinking_config=_thinking_config(model),
                     # Each remote call is a full model round-trip; without a
                     # cap a tool-happy model can stack these for a minute+.
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                        maximum_remote_calls=4
+                        maximum_remote_calls=2
                     ),
                 ),
             )
@@ -367,7 +378,8 @@ def generate_content_llm(conversation_context, extra_tools=None):
                     model=model,
                     contents=contents,
                     config=types.GenerateContentConfig(
-                        system_instruction=system_instruction
+                        system_instruction=system_instruction,
+                        thinking_config=_thinking_config(model),
                     ),
                 )
                 elapsed = time.monotonic() - start
