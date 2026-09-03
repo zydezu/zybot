@@ -16,9 +16,7 @@ load_dotenv()
 
 os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
-# Cap every API call. Without this the SDK will happily sit on a stalled
-# connection for minutes (seen: a 503 that took 288s to come back) while the
-# bot shows a "typing…" indicator the whole time. Value is in milliseconds.
+# Cap every API call
 REQUEST_TIMEOUT_MS = 25_000
 client = genai.Client(http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS))
 
