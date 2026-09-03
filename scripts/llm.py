@@ -34,6 +34,20 @@ MODELS = [
 
 DEFAULT_TIMEZONE = "Europe/London"
 
+MODEL_COOLDOWN_S = 300
+_model_unavailable_until = {}
+
+
+def _live_models():
+    now = time.monotonic()
+    ready = [m for m in MODELS if _model_unavailable_until.get(m, 0) <= now]
+    return ready or MODELS
+
+
+def _unavailable(model):
+    _model_unavailable_until[model] = time.monotonic() + MODEL_COOLDOWN_S
+    _log(f"[llm] {model} benched for {MODEL_COOLDOWN_S}s")
+
 
 def _thinking_config(model):
     """♪ we dont want thinking, because it is not endearing ♪"""
@@ -333,7 +347,7 @@ def generate_content_llm(conversation_context, extra_tools=None):
     ]
     base_turn_count = len(contents)
 
-    for model in MODELS:
+    for model in _live_models():
         start = time.monotonic()
         try:
             response = client.models.generate_content(
@@ -363,10 +377,9 @@ def generate_content_llm(conversation_context, extra_tools=None):
             elapsed = time.monotonic() - start
             _log(f"[llm] {model} failed with tools after {elapsed:.2f}s: {e}")
 
-            # Quota (429) or the model itself being unavailable/overloaded
-            # (503) or a timeout won't be helped by retrying the same model
-            # without tools - that's just a second slow failure. Move on.
-            if getattr(e, "code", None) in (429, 500, 503) or _is_transient(e):
+            # skip models on cooldown or with errors
+            if getattr(e, "code", None) in (429, 500, 503, 504) or _is_transient(e):
+                _unavailable(model)
                 continue
 
             # Some fallback models don't support search or functions
