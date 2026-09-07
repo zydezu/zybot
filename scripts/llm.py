@@ -133,6 +133,10 @@ def get_health_status() -> str:
     if "error" in data:
         return f"no health data available: {data['error']}"
 
+    def _hm(hours):
+        total = round(hours * 60)
+        return f"{total // 60}h {total % 60}m"
+
     def _format_day(day):
         parts = [day["date"]]
         if "weight_kg" in day:
@@ -140,6 +144,12 @@ def get_health_status() -> str:
         if "sleep" in day:
             s = day["sleep"]
             parts.append(f"slept {s['hours']}h ({s['from']}-{s['to']})")
+            stages = s.get("stages", {})
+            if stages:
+                parts.append(
+                    "stages: "
+                    + ", ".join(f"{name} {_hm(h)}" for name, h in stages.items())
+                )
         if "naps" in day:
             nap_hours = sum(n["hours"] for n in day["naps"].values())
             parts.append(f"napped {nap_hours:.1f}h")
