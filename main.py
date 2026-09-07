@@ -151,9 +151,41 @@ def _make_summarize_chat_tool(channel, loop):
     return summarize_chat
 
 
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+
+
+def _collect_image_urls(message):
+    """Image URLs for the bot"""
+    sources = [message]
+    ref = message.reference.resolved if message.reference else None
+    if isinstance(ref, discord.Message):
+        sources.append(ref)
+
+    urls = []
+    for src in sources:
+        for att in src.attachments:
+            if (att.content_type or "").startswith(
+                "image/"
+            ) or att.filename.lower().endswith(IMAGE_EXTENSIONS):
+                urls.append(att.url)
+        for embed in src.embeds:
+            for media in (embed.image, embed.thumbnail):
+                if media and media.url:
+                    urls.append(media.url)
+        for match in URL_REGEX.findall(src.content or ""):
+            url = match.rstrip(").,>\"'")
+            if url.lower().split("?")[0].endswith(IMAGE_EXTENSIONS):
+                urls.append(url)
+
+    seen = set()
+    return [u for u in urls if not (u in seen or seen.add(u))]
+
+
 async def handle_ai_response(message):
     channel_id = message.channel.id
-    state.add_to_context(channel_id, message.author.display_name, message.content)
+    image_urls = _collect_image_urls(message)
+    content = message.content or ("[sent an image]" if image_urls else "")
+    state.add_to_context(channel_id, message.author.display_name, content)
     async with message.channel.typing():
         summarize_chat = _make_summarize_chat_tool(
             message.channel, asyncio.get_running_loop()
@@ -162,6 +194,7 @@ async def handle_ai_response(message):
             llm.generate_content_llm,
             state.conversation_context[channel_id],
             [summarize_chat],
+            image_urls,
         )
         state.add_to_context(channel_id, "Aigis", llm_data)
         try:

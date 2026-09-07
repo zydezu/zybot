@@ -37,6 +37,10 @@ DEFAULT_TIMEZONE = "Europe/London"
 MODEL_COOLDOWN_S = 300
 _model_unavailable_until = {}
 
+# Read images
+MAX_IMAGES = 4
+MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
 
 def _live_models():
     now = time.monotonic()
@@ -242,6 +246,9 @@ def _system_instruction():
         f"{SYSTEM_PROMPT}\n\n"
         f"Right now it's {now.strftime('%A, %B %d, %Y')}, "
         f"{now.strftime('%-I:%M %p')} (UK time, this server's clock). "
+        "When someone posts an image (an upload or a link to one) you can see "
+        "it directly — read any text in it and answer about what's actually "
+        "there, don't pretend you can't see it. "
         "You have tools to search the web, check the time anywhere else in "
         "the world, check live metrics for alex's home servers (basil, "
         "sunny and maeno), check alex's recent tweets, check alex's recent weight/sleep "
@@ -278,11 +285,32 @@ def _system_instruction():
     )
 
 
-def _build_contents(conversation_context):
+def _fetch_image_parts(urls):
+    """Download image URLs into inline Parts the model can see."""
+    parts = []
+    for url in (urls or [])[:MAX_IMAGES]:
+        try:
+            resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+            resp.raise_for_status()
+            mime = resp.headers.get("Content-Type", "").split(";")[0].strip().lower()
+            if not mime.startswith("image/"):
+                _log(f"[llm] not an image ({mime or 'no type'}): {_preview(url, 80)}")
+                continue
+            if len(resp.content) > MAX_IMAGE_BYTES:
+                _log(f"[llm] image too big ({len(resp.content)}B): {_preview(url, 80)}")
+                continue
+            parts.append(types.Part.from_bytes(data=resp.content, mime_type=mime))
+        except Exception as e:
+            _log(f"[llm] couldn't fetch image {_preview(url, 80)}: {e}")
+    return parts
+
+
+def _build_contents(conversation_context, image_parts=None):
     """Turn (author, message) history into alternating user/model turns.
 
     conversation_context's last entry is always the message to respond to;
-    passing it through structured turns
+    passing it through structured turns. image_parts, if any, are attached to
+    that final user turn.
     """
     turns = []
     for name, msg in conversation_context:
@@ -297,6 +325,12 @@ def _build_contents(conversation_context):
     while turns and turns[0].role == "model":
         turns.pop(0)
 
+    if image_parts:
+        if turns and turns[-1].role == "user":
+            turns[-1].parts.extend(image_parts)
+        else:
+            turns.append(types.Content(role="user", parts=list(image_parts)))
+
     return turns
 
 
@@ -308,8 +342,12 @@ def _preview(text, limit=200):
 def _log_request(contents):
     _log(f"[llm] --- new request: {len(contents)} turn(s) ---")
     for turn in contents:
-        text = turn.parts[0].text if turn.parts else ""
-        _log(f"[llm]   {turn.role}: {_preview(text)}")
+        text = next(
+            (p.text for p in (turn.parts or []) if getattr(p, "text", None)), ""
+        )
+        images = sum(1 for p in (turn.parts or []) if getattr(p, "inline_data", None))
+        suffix = f" [+{images} image(s)]" if images else ""
+        _log(f"[llm]   {turn.role}: {_preview(text)}{suffix}")
 
 
 def _log_tool_activity(response, base_turn_count):
@@ -329,8 +367,9 @@ def _log_tool_activity(response, base_turn_count):
                 )
 
 
-def generate_content_llm(conversation_context, extra_tools=None):
-    contents = _build_contents(conversation_context)
+def generate_content_llm(conversation_context, extra_tools=None, image_urls=None):
+    image_parts = _fetch_image_parts(image_urls)
+    contents = _build_contents(conversation_context, image_parts)
     if not contents:
         return "..."
     _log_request(contents)
@@ -347,7 +386,12 @@ def generate_content_llm(conversation_context, extra_tools=None):
     ]
     base_turn_count = len(contents)
 
-    for model in _live_models():
+    models = _live_models()
+    if image_parts:
+        # gemma models are text-only; don't waste an attempt on them here
+        models = [m for m in models if not m.startswith("gemma")] or models
+
+    for model in models:
         start = time.monotonic()
         try:
             response = client.models.generate_content(
@@ -409,7 +453,4 @@ def generate_content_llm(conversation_context, extra_tools=None):
             continue
 
     _log("[llm] No available models to use!")
-    return (
-        "this idiot ran out of rate limits (or google didnt like what you typed). "
-        "please pay us $1200 for ooomfieeee claudee roleplayyy~~~"
-    )
+    return "Uhm... Aigis just got censored..."
