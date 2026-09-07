@@ -8,6 +8,7 @@ from multiprocessing import freeze_support
 
 import aiohttp
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 
 import scripts.artcounting as artcounting
@@ -219,33 +220,67 @@ def _format_server_emojis(guild):
     return " ".join(str(emoji) for emoji in usable[:MAX_SERVER_EMOJIS])
 
 
+async def _generate_aigis_reply(
+    channel_id, author, text, *, is_dm, server_emojis, extra_tools=(), image_urls=()
+):
+    """messy"""
+    state.add_to_context(channel_id, author, text)
+    llm_data = await asyncio.to_thread(
+        llm.generate_content_llm,
+        state.conversation_context[channel_id],
+        list(extra_tools),
+        list(image_urls),
+        is_dm,
+        server_emojis,
+    )
+    state.add_to_context(channel_id, "Aigis", llm_data)
+    return llm_data
+
+
 async def handle_ai_response(message):
-    channel_id = message.channel.id
     is_dm = isinstance(message.channel, discord.DMChannel)
-    server_emojis = _format_server_emojis(message.guild)
     image_urls = _collect_image_urls(message)
     content = message.content or ("[sent an image]" if image_urls else "")
-    state.add_to_context(channel_id, message.author.display_name, content)
     async with message.channel.typing():
-        # Only use in server channels, not DMs
+        # Chat-history tool only makes sense in a server channel, not a DM
         extra_tools = []
         if not is_dm:
             extra_tools.append(
                 _make_summarize_chat_tool(message.channel, asyncio.get_running_loop())
             )
-        llm_data = await asyncio.to_thread(
-            llm.generate_content_llm,
-            state.conversation_context[channel_id],
-            extra_tools,
-            image_urls,
-            is_dm,
-            server_emojis,
+        llm_data = await _generate_aigis_reply(
+            message.channel.id,
+            message.author.display_name,
+            content,
+            is_dm=is_dm,
+            server_emojis=_format_server_emojis(message.guild),
+            extra_tools=extra_tools,
+            image_urls=image_urls,
         )
-        state.add_to_context(channel_id, "Aigis", llm_data)
         try:
             await message.reply(llm_data)
         except aiohttp.ClientConnectionResetError:
             pass
+
+
+@bot.tree.command(name="aigis", description="Summon Aigis to say something")
+@app_commands.describe(prompt="what to say to her")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+async def aigis_command(interaction: discord.Interaction, prompt: str):
+    """Summon Aigis to say something"""
+    await interaction.response.defer()
+    llm_data = await _generate_aigis_reply(
+        interaction.channel_id,
+        interaction.user.display_name,
+        prompt,
+        is_dm=interaction.guild is None,
+        server_emojis=_format_server_emojis(interaction.guild),
+    )
+    try:
+        await interaction.followup.send(llm_data)
+    except aiohttp.ClientConnectionResetError:
+        pass
 
 
 @bot.event
