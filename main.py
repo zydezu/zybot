@@ -18,7 +18,9 @@ from config import (
     CHANNEL_IDS,
     CHANNELS_TO_COUNT,
     CONVERSATION_CONTEXT_PATH,
+    CUTE_EMOJI_ALLOWLIST,
     LUCKY_STAR_LINES_PATH,
+    MAX_SERVER_EMOJIS,
     ROLE_IDS,
     SEND_GIT_COMMITS,
     TOKEN,
@@ -105,6 +107,28 @@ async def on_ready():
     check_commits.start()
     await check_commits()
     print(f"[main] Logged in as {bot.user} (ID: {bot.user.id})")
+    _log_server_emojis()
+
+
+def _log_server_emojis():
+    """List all custom emojis the bot can use"""
+    for guild in bot.guilds:
+        emojis = sorted(guild.emojis, key=lambda e: e.name.lower())
+        if not emojis:
+            print(f"[main] {guild.name}: no custom emojis")
+            continue
+        usable = sum(1 for e in emojis if e.is_usable())
+        names = ", ".join(f":{e.name}:" for e in emojis)
+        print(
+            f"[main] {guild.name}: {len(emojis)} custom emojis "
+            f"({usable} usable): {names}"
+        )
+
+
+@bot.event
+async def on_guild_emojis_update(guild, before, after):
+    print(f"[main] {guild.name} emojis changed: {len(before)} -> {len(after)}")
+    _log_server_emojis()
 
 
 @bot.event
@@ -181,20 +205,41 @@ def _collect_image_urls(message):
     return [u for u in urls if not (u in seen or seen.add(u))]
 
 
+def _format_server_emojis(guild):
+    if guild is None:
+        return None
+    allow = {name.lower() for name in CUTE_EMOJI_ALLOWLIST}
+    usable = [
+        emoji
+        for emoji in guild.emojis
+        if emoji.is_usable() and (not allow or emoji.name.lower() in allow)
+    ]
+    if not usable:
+        return None
+    return " ".join(str(emoji) for emoji in usable[:MAX_SERVER_EMOJIS])
+
+
 async def handle_ai_response(message):
     channel_id = message.channel.id
+    is_dm = isinstance(message.channel, discord.DMChannel)
+    server_emojis = _format_server_emojis(message.guild)
     image_urls = _collect_image_urls(message)
     content = message.content or ("[sent an image]" if image_urls else "")
     state.add_to_context(channel_id, message.author.display_name, content)
     async with message.channel.typing():
-        summarize_chat = _make_summarize_chat_tool(
-            message.channel, asyncio.get_running_loop()
-        )
+        # Only use in server channels, not DMs
+        extra_tools = []
+        if not is_dm:
+            extra_tools.append(
+                _make_summarize_chat_tool(message.channel, asyncio.get_running_loop())
+            )
         llm_data = await asyncio.to_thread(
             llm.generate_content_llm,
             state.conversation_context[channel_id],
-            [summarize_chat],
+            extra_tools,
             image_urls,
+            is_dm,
+            server_emojis,
         )
         state.add_to_context(channel_id, "Aigis", llm_data)
         try:

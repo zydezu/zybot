@@ -250,10 +250,32 @@ def find_artwork(tags: str, rating: str = "s") -> str:
     return image_url
 
 
-def _system_instruction():
+def _system_instruction(is_dm=False, server_emojis=None):
     now = datetime.now(ZoneInfo(DEFAULT_TIMEZONE))
+    dm_note = (
+        "You're in a one-on-one DM right now, it's just you "
+        "and this one person. There's no wider group chat here to catch up on "
+        "or summarize, and you can't pull up channel history. "
+        if is_dm
+        else ""
+    )
+    if server_emojis:
+        emoji_note = (
+            "These are the cute custom emojis from the server you're in, and "
+            "the only emojis you're allowed to use at all: "
+            f"{server_emojis}. To use one, write it exactly as shown here "
+            "(the whole <:name:id> form, angle brackets included). Use at most "
+            "one per message, only when it genuinely fits, and leave most "
+            "messages with none. Never use any emoji that isn't in this list. "
+        )
+    else:
+        emoji_note = (
+            "You have no custom emojis available here, so don't use any emoji. "
+        )
     return (
         f"{SYSTEM_PROMPT}\n\n"
+        f"{dm_note}"
+        f"{emoji_note}"
         f"Right now it's {now.strftime('%A, %B %d, %Y')}, "
         f"{now.strftime('%-I:%M %p')} (UK time, this server's clock). "
         "When someone posts an image (an upload or a link to one) you can see "
@@ -377,14 +399,20 @@ def _log_tool_activity(response, base_turn_count):
                 )
 
 
-def generate_content_llm(conversation_context, extra_tools=None, image_urls=None):
+def generate_content_llm(
+    conversation_context,
+    extra_tools=None,
+    image_urls=None,
+    is_dm=False,
+    server_emojis=None,
+):
     image_parts = _fetch_image_parts(image_urls)
     contents = _build_contents(conversation_context, image_parts)
     if not contents:
         return "..."
     _log_request(contents)
 
-    system_instruction = _system_instruction()
+    system_instruction = _system_instruction(is_dm, server_emojis)
     tools = [
         search_web,
         get_current_time,
