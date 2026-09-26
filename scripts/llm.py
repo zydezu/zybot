@@ -10,7 +10,7 @@ from google import genai
 from google.genai import types
 
 import scripts.danboorusearch as danboorusearch
-from config import SYSTEM_PROMPT
+from config import CODE_EXTENSIONS, SYSTEM_PROMPT
 
 load_dotenv()
 
@@ -40,6 +40,17 @@ _model_unavailable_until = {}
 # Read images
 MAX_IMAGES = 4
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+# Read documents (PDF/text attachments)
+MAX_DOCUMENTS = 2
+MAX_DOCUMENT_BYTES = 15 * 1024 * 1024
+DOCUMENT_MIME_TYPES = {
+    "application/pdf",
+    "text/plain",
+    "text/markdown",
+    "text/csv",
+    "application/json",
+}
 
 
 def _live_models():
@@ -280,7 +291,10 @@ def _system_instruction(is_dm=False, server_emojis=None):
         f"{now.strftime('%-I:%M %p')} (UK time, this server's clock). "
         "When someone posts an image (an upload or a link to one) you can see "
         "it directly — read any text in it and answer about what's actually "
-        "there, don't pretend you can't see it. "
+        "there, don't pretend you can't see it. Same for a PDF or text file "
+        "someone attaches — you can read its actual contents directly, so "
+        "answer from what's really in it rather than guessing from the "
+        "filename. "
         "You have tools to search the web, check the time anywhere else in "
         "the world, check live metrics for alex's home servers (basil, "
         "sunny and maeno), check alex's recent tweets, check alex's recent weight/sleep "
@@ -337,11 +351,40 @@ def _fetch_image_parts(urls):
     return parts
 
 
-def _build_contents(conversation_context, image_parts=None):
+def _fetch_document_parts(urls):
+    """Download PDF/text attachment URLs into inline Parts the model can read."""
+    parts = []
+    for url in (urls or [])[:MAX_DOCUMENTS]:
+        try:
+            resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+            resp.raise_for_status()
+            mime = resp.headers.get("Content-Type", "").split(";")[0].strip().lower()
+            if url.lower().split("?")[0].endswith(CODE_EXTENSIONS):
+                # CDNs report all sorts of mimes (or none) for source files;
+                # Gemini just needs a supported type to read it as text
+                mime = "text/plain"
+            elif mime not in DOCUMENT_MIME_TYPES:
+                _log(
+                    f"[llm] not a readable document ({mime or 'no type'}): "
+                    f"{_preview(url, 80)}"
+                )
+                continue
+            if len(resp.content) > MAX_DOCUMENT_BYTES:
+                _log(
+                    f"[llm] document too big ({len(resp.content)}B): {_preview(url, 80)}"
+                )
+                continue
+            parts.append(types.Part.from_bytes(data=resp.content, mime_type=mime))
+        except Exception as e:
+            _log(f"[llm] couldn't fetch document {_preview(url, 80)}: {e}")
+    return parts
+
+
+def _build_contents(conversation_context, media_parts=None):
     """Turn (author, message) history into alternating user/model turns.
 
     conversation_context's last entry is always the message to respond to;
-    passing it through structured turns. image_parts, if any, are attached to
+    passing it through structured turns. media_parts, if any, are attached to
     that final user turn.
     """
     turns = []
@@ -357,11 +400,11 @@ def _build_contents(conversation_context, image_parts=None):
     while turns and turns[0].role == "model":
         turns.pop(0)
 
-    if image_parts:
+    if media_parts:
         if turns and turns[-1].role == "user":
-            turns[-1].parts.extend(image_parts)
+            turns[-1].parts.extend(media_parts)
         else:
-            turns.append(types.Content(role="user", parts=list(image_parts)))
+            turns.append(types.Content(role="user", parts=list(media_parts)))
 
     return turns
 
@@ -377,8 +420,10 @@ def _log_request(contents):
         text = next(
             (p.text for p in (turn.parts or []) if getattr(p, "text", None)), ""
         )
-        images = sum(1 for p in (turn.parts or []) if getattr(p, "inline_data", None))
-        suffix = f" [+{images} image(s)]" if images else ""
+        attachments = sum(
+            1 for p in (turn.parts or []) if getattr(p, "inline_data", None)
+        )
+        suffix = f" [+{attachments} attachment(s)]" if attachments else ""
         _log(f"[llm]   {turn.role}: {_preview(text)}{suffix}")
 
 
@@ -405,9 +450,10 @@ def generate_content_llm(
     image_urls=None,
     is_dm=False,
     server_emojis=None,
+    doc_urls=None,
 ):
-    image_parts = _fetch_image_parts(image_urls)
-    contents = _build_contents(conversation_context, image_parts)
+    media_parts = _fetch_image_parts(image_urls) + _fetch_document_parts(doc_urls)
+    contents = _build_contents(conversation_context, media_parts)
     if not contents:
         return "..."
     _log_request(contents)
@@ -425,7 +471,7 @@ def generate_content_llm(
     base_turn_count = len(contents)
 
     models = _live_models()
-    if image_parts:
+    if media_parts:
         # gemma models are text-only; don't waste an attempt on them here
         models = [m for m in models if not m.startswith("gemma")] or models
 

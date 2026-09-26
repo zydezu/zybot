@@ -18,6 +18,7 @@ import scripts.llm as llm
 from config import (
     CHANNEL_IDS,
     CHANNELS_TO_COUNT,
+    CODE_EXTENSIONS,
     CONVERSATION_CONTEXT_PATH,
     CUTE_EMOJI_ALLOWLIST,
     LUCKY_STAR_LINES_PATH,
@@ -177,33 +178,48 @@ def _make_summarize_chat_tool(channel, loop):
 
 
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+DOCUMENT_EXTENSIONS = (".pdf", ".txt", ".md", ".csv", ".json", ".log")
+DOCUMENT_MIME_TYPES = (
+    "application/pdf",
+    "text/plain",
+    "text/markdown",
+    "text/csv",
+    "application/json",
+)
 
 
-def _collect_image_urls(message):
-    """Image URLs for the bot"""
+def _collect_attachment_urls(message):
+    """Includes attachments"""
     sources = [message]
     ref = message.reference.resolved if message.reference else None
     if isinstance(ref, discord.Message):
         sources.append(ref)
 
-    urls = []
+    image_urls, doc_urls = [], []
     for src in sources:
         for att in src.attachments:
-            if (att.content_type or "").startswith(
-                "image/"
-            ) or att.filename.lower().endswith(IMAGE_EXTENSIONS):
-                urls.append(att.url)
+            content_type = (att.content_type or "").split(";")[0].strip().lower()
+            name = att.filename.lower()
+            if content_type.startswith("image/") or name.endswith(IMAGE_EXTENSIONS):
+                image_urls.append(att.url)
+            elif content_type in DOCUMENT_MIME_TYPES or name.endswith(
+                DOCUMENT_EXTENSIONS + CODE_EXTENSIONS
+            ):
+                doc_urls.append(att.url)
         for embed in src.embeds:
             for media in (embed.image, embed.thumbnail):
                 if media and media.url:
-                    urls.append(media.url)
+                    image_urls.append(media.url)
         for match in URL_REGEX.findall(src.content or ""):
             url = match.rstrip(").,>\"'")
             if url.lower().split("?")[0].endswith(IMAGE_EXTENSIONS):
-                urls.append(url)
+                image_urls.append(url)
 
-    seen = set()
-    return [u for u in urls if not (u in seen or seen.add(u))]
+    def _dedupe(urls):
+        seen = set()
+        return [u for u in urls if not (u in seen or seen.add(u))]
+
+    return _dedupe(image_urls), _dedupe(doc_urls)
 
 
 def _format_server_emojis(guild):
@@ -221,7 +237,15 @@ def _format_server_emojis(guild):
 
 
 async def _generate_aigis_reply(
-    channel_id, author, text, *, is_dm, server_emojis, extra_tools=(), image_urls=()
+    channel_id,
+    author,
+    text,
+    *,
+    is_dm,
+    server_emojis,
+    extra_tools=(),
+    image_urls=(),
+    doc_urls=(),
 ):
     """messy"""
     state.add_to_context(channel_id, author, text)
@@ -232,6 +256,7 @@ async def _generate_aigis_reply(
         list(image_urls),
         is_dm,
         server_emojis,
+        list(doc_urls),
     )
     state.add_to_context(channel_id, "Aigis", llm_data)
     return llm_data
@@ -239,8 +264,15 @@ async def _generate_aigis_reply(
 
 async def handle_ai_response(message):
     is_dm = isinstance(message.channel, discord.DMChannel)
-    image_urls = _collect_image_urls(message)
-    content = message.content or ("[sent an image]" if image_urls else "")
+    image_urls, doc_urls = _collect_attachment_urls(message)
+    if message.content:
+        content = message.content
+    elif image_urls:
+        content = "[sent an image]"
+    elif doc_urls:
+        content = "[sent a file]"
+    else:
+        content = ""
     async with message.channel.typing():
         # Chat-history tool only makes sense in a server channel, not a DM
         extra_tools = []
@@ -256,6 +288,7 @@ async def handle_ai_response(message):
             server_emojis=_format_server_emojis(message.guild),
             extra_tools=extra_tools,
             image_urls=image_urls,
+            doc_urls=doc_urls,
         )
         try:
             await message.reply(llm_data)

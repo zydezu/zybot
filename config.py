@@ -32,6 +32,36 @@ EMBED_LINKS = [
 
 CHANNELS_TO_COUNT = {"art": "art", "yaoi": "art", "yuri": "yuri"}
 
+# god
+CODE_EXTENSIONS = (
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".java",
+    ".c",
+    ".h",
+    ".cpp",
+    ".hpp",
+    ".cs",
+    ".go",
+    ".rs",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+    ".sh",
+    ".sql",
+    ".html",
+    ".css",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".xml",
+    ".lua",
+)
+
 # All emojis
 CUTE_EMOJI_ALLOWLIST = set()
 
