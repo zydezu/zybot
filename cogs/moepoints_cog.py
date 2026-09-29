@@ -38,8 +38,7 @@ class MoePointsCog(commands.Cog):
 
         if not entry:
             description = (
-                f"**{name}** has no moe points at all. Not one. Ever. "
-                "A blank slate."
+                f"**{name}** has no moe points at all. Not one. Ever. A blank slate."
             )
         else:
             points = int(entry.get("points", 0))
@@ -48,11 +47,7 @@ class MoePointsCog(commands.Cog):
             if best.get("points"):
                 description += (
                     f"\nBiggest single award: **{best['points']}** points"
-                    + (
-                        f"\n{best['reason']}"
-                        if best.get("reason")
-                        else ""
-                    )
+                    + (f"\n{best['reason']}" if best.get("reason") else "")
                 )
 
         try:
@@ -81,9 +76,8 @@ class MoePointsCog(commands.Cog):
             medals = {1: "1st", 2: "2nd", 3: "3rd"}
             lines = []
             for position, (user_id, info) in enumerate(ranked, start=1):
-                name = info["name"] or f"<@{user_id}>"
                 marker = medals.get(position, f"{position}th")
-                lines.append(f"**{marker}** — {name}: **{info['points']}**")
+                lines.append(f"`{marker}` <@{user_id}>: **{info['points']}**")
             description = "\n".join(lines)
 
         try:

@@ -267,7 +267,7 @@ async def _generate_aigis_reply(
         extra_tools = [
             *extra_tools,
             moepoints.make_judge_tool(author_id, author),
-            *moepoints.make_read_tools(),
+            *moepoints.make_read_tools(author_id, author),
         ]
 
     llm_data = await asyncio.to_thread(

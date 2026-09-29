@@ -66,28 +66,14 @@ def get_user_entry(user_id):
 
 
 def get_moepoints_json():
-    """Every user with a non-zero score, as {user_id: {points, name}}."""
+    """Every user with a non-zero score, as {user_id: {points}}."""
     return {
         user_id: {
             "points": int(entry.get("points", 0)),
-            "name": entry.get("name", ""),
         }
         for user_id, entry in _load().items()
         if isinstance(entry, dict) and int(entry.get("points", 0)) > 0
     }
-
-
-def find_by_name(name):
-    """Look a user up by their display name"""
-    data = _load()
-    wanted = name.strip().lower()
-    for user_id, entry in data.items():
-        if entry.get("name", "").lower() == wanted:
-            return user_id, entry
-    for user_id, entry in data.items():
-        if wanted in entry.get("name", "").lower():
-            return user_id, entry
-    return None, None
 
 
 def leaderboard(limit=10):
@@ -98,7 +84,7 @@ def leaderboard(limit=10):
     return ranked[:limit]
 
 
-def add_moepoints(user_id, name, points, reason=""):
+def add_moepoints(user_id, points, reason=""):
     """Award points to a user, keeping their biggest single award on record.
 
     Returns the entry after the update, or None if nothing was awarded.
@@ -110,17 +96,20 @@ def add_moepoints(user_id, name, points, reason=""):
     with _lock:
         data = _load()
         key = str(user_id)
-        entry = data.get(key) or {"points": 0, "name": name, "best": {}}
-        entry["name"] = name or entry.get("name", "")
+        entry = data.get(key) or {"points": 0, "best": {}}
+        entry.pop("name", None)
 
         entry["points"] = int(entry.get("points", 0)) + points
         if points > int(entry.get("best", {}).get("points", 0)):
             entry["best"] = {"points": points, "reason": reason}
 
         data[key] = entry
+        for other in data.values():
+            if isinstance(other, dict):
+                other.pop("name", None)
         _save(data)
 
-    print(f"[moepoints] +{points} to {name} ({key}), now {entry['points']}")
+    print(f"[moepoints] +{points} to {key}, now {entry['points']}")
     return entry
 
 
@@ -131,10 +120,8 @@ def format_leaderboard(limit=10):
         return "nobody has any moe points yet, the leaderboard is completely empty"
 
     lines = []
-    for position, (_user_id, info) in enumerate(ranked, start=1):
-        lines.append(
-            f"{position}. {info['name'] or 'someone'} - {info['points']} points"
-        )
+    for position, (user_id, info) in enumerate(ranked, start=1):
+        lines.append(f"{position}. <@{user_id}> - {info['points']} points")
     return "; ".join(lines)
 
 
@@ -145,8 +132,8 @@ def describe_top(limit=5):
         return "nobody has scored yet, the whole thing is empty"
 
     lines = []
-    for position, (_user_id, info) in enumerate(ranked, start=1):
-        lines.append(f"{position}. {info['name'] or 'someone'} with {info['points']}")
+    for position, (user_id, info) in enumerate(ranked, start=1):
+        lines.append(f"{position}. <@{user_id}> with {info['points']}")
     return ", then ".join(lines)
 
 
@@ -171,7 +158,7 @@ def make_judge_tool(user_id, name):
             points: how moe it was, 0-100, using the anchors above.
             reason: a few words on why, for the record.
         """
-        entry = add_moepoints(user_id, name, points, reason)
+        entry = add_moepoints(user_id, points, reason)
         points_now = int(entry["points"]) if entry else get_user_moepoints(user_id)
 
         if not entry:
@@ -191,21 +178,18 @@ def make_judge_tool(user_id, name):
     return record_moe
 
 
-def make_read_tools():
+def make_read_tools(user_id, name):
     """Build the read-only tools for looking up scores and the leaderboard."""
 
-    def check_moepoints(name: str) -> str:
-        """Look up someone's moe points by name, to tell them their score.
+    def check_moepoints() -> str:
+        """Look up your moe points, to tell you your score.
 
-        Use this when someone asks how many points they or a friend have.
-        Pass the display name as it appears in chat, eg. "zy" or "konata".
-
-        Args:
-            name: whose points to look up.
+        Use this when someone asks how many points they have. It always
+        checks the person you're talking to, so call it with no arguments.
         """
-        _user_id, entry = find_by_name(name)
+        entry = get_user_entry(user_id)
         if not entry:
-            return f"no moe points on record for anyone called {name}"
+            return f"no moe points on record for {name}"
 
         points = int(entry.get("points", 0))
         best = entry.get("best") or {}
