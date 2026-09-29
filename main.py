@@ -15,6 +15,7 @@ import scripts.artcounting as artcounting
 import scripts.commits as commits
 import scripts.danboorusearch as danboorusearch
 import scripts.llm as llm
+import scripts.moepoints as moepoints
 from config import (
     CHANNEL_IDS,
     CHANNELS_TO_COUNT,
@@ -102,6 +103,7 @@ async def on_ready():
     await bot.load_extension("cogs.admin_cog")
     await bot.load_extension("cogs.fun_cog")
     await bot.load_extension("cogs.colour_cog")
+    await bot.load_extension("cogs.moepoints_cog")
 
     await bot.tree.sync()
     print("[main] Synced commands globally")
@@ -243,12 +245,22 @@ async def _generate_aigis_reply(
     *,
     is_dm,
     server_emojis,
+    author_id=None,
     extra_tools=(),
     image_urls=(),
     doc_urls=(),
 ):
     """messy"""
     state.add_to_context(channel_id, author, text)
+
+    # The moe tools are per-author
+    if author_id is not None:
+        extra_tools = [
+            *extra_tools,
+            moepoints.make_judge_tool(author_id, author),
+            *moepoints.make_read_tools(),
+        ]
+
     llm_data = await asyncio.to_thread(
         llm.generate_content_llm,
         state.conversation_context[channel_id],
@@ -286,6 +298,7 @@ async def handle_ai_response(message):
             content,
             is_dm=is_dm,
             server_emojis=_format_server_emojis(message.guild),
+            author_id=message.author.id,
             extra_tools=extra_tools,
             image_urls=image_urls,
             doc_urls=doc_urls,
@@ -309,6 +322,7 @@ async def aigis_command(interaction: discord.Interaction, prompt: str):
         prompt,
         is_dm=interaction.guild is None,
         server_emojis=_format_server_emojis(interaction.guild),
+        author_id=interaction.user.id,
     )
     try:
         await interaction.followup.send(llm_data)
