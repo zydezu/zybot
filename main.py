@@ -179,7 +179,16 @@ def _make_summarize_chat_tool(channel, loop):
     return summarize_chat
 
 
-IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+IMAGE_EXTENSIONS = (
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".gif",
+    ".bmp",
+    ".avif",
+    ".apng",
+)
 DOCUMENT_EXTENSIONS = (".pdf", ".txt", ".md", ".csv", ".json", ".log")
 DOCUMENT_MIME_TYPES = (
     "application/pdf",

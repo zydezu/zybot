@@ -1,3 +1,4 @@
+import io
 import os
 import time
 import xml.etree.ElementTree as ET
@@ -8,6 +9,7 @@ import requests
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from PIL import Image, ImageSequence
 
 import scripts.danboorusearch as danboorusearch
 from config import CODE_EXTENSIONS, SYSTEM_PROMPT
@@ -40,6 +42,17 @@ _model_unavailable_until = {}
 # Read images
 MAX_IMAGES = 4
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+# Discord hands us AVIF and animated GIF/WebP, neither of which Gemini reads
+# directly. We transcode to PNG/JPEG, and for animations we send several
+# frames as separate parts, because the model only ever sees frame 1 of an
+# animated file
+ANIMATED_MAX_FRAMES = 4
+# One image can become up to ANIMATED_MAX_FRAMES parts, so cap the total
+# separately or a few gifs would blow past the model's image limit
+MAX_IMAGE_PARTS = 8
+# Cap the pixels of any decoded frame, animations especially are huge
+MAX_FRAME_PIXELS = 4_000_000
 
 # Read documents (PDF/text attachments)
 MAX_DOCUMENTS = 2
@@ -291,7 +304,12 @@ def _system_instruction(is_dm=False, server_emojis=None):
         f"{now.strftime('%-I:%M %p')} (UK time, this server's clock). "
         "When someone posts an image (an upload or a link to one) you can see "
         "it directly — read any text in it and answer about what's actually "
-        "there, don't pretend you can't see it. Same for a PDF or text file "
+        "there, don't pretend you can't see it. You can read AVIF images and "
+        "animated GIFs and WebPs too. If you ever see a bracketed note saying "
+        "that the next few images are frames of one animation, treat them as "
+        "a single moving image and describe what happens over the course of "
+        "it; images without that note are separate pictures, not a sequence. "
+        "Same for a PDF or text file "
         "someone attaches — you can read its actual contents directly, so "
         "answer from what's really in it rather than guessing from the "
         "filename. "
@@ -341,8 +359,84 @@ def _system_instruction(is_dm=False, server_emojis=None):
     )
 
 
+# Formats Gemini reads as-is, so we don't waste a transcode on them
+PASSTHROUGH_IMAGE_MIMES = {
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+}
+
+
+def _thumbnail(image):
+    """Downscale if huge, so a big screenshot doesn't blow the request."""
+    if image.width * image.height <= MAX_FRAME_PIXELS:
+        return image
+    scale = (MAX_FRAME_PIXELS / (image.width * image.height)) ** 0.5
+    return image.resize(
+        (max(1, int(image.width * scale)), max(1, int(image.height * scale))),
+        Image.LANCZOS,
+    )
+
+
+def _encode_frame(frame):
+    """One frame as an inline part, flattening transparency onto white.
+
+    JPEG when possible — re-encoding a large opaque image as PNG can triple
+    its size, which is worse than the compression it was trying to avoid.
+    """
+    has_alpha = frame.mode in ("RGBA", "LA") or (
+        frame.mode == "P" and "transparency" in frame.info
+    )
+    if has_alpha:
+        flattened = Image.new("RGBA", frame.size, (255, 255, 255, 255))
+        frame = Image.alpha_composite(flattened, frame.convert("RGBA"))
+        mime, fmt, kwargs = "image/png", "PNG", {}
+    else:
+        frame = frame.convert("RGB")
+        mime, fmt, kwargs = "image/jpeg", "JPEG", {"quality": 90}
+
+    frame = _thumbnail(frame)
+    buffer = io.BytesIO()
+    frame.save(buffer, format=fmt, **kwargs)
+    return types.Part.from_bytes(data=buffer.getvalue(), mime_type=mime)
+
+
+def _animated_parts(image):
+    """Sample a few frames out of an opened animation and return them as parts.
+
+    Gemini reads only the first frame of an animated GIF/WebP, so an
+    animation sent whole is just a still. Splitting it up is the only way
+    it can actually see that something moves.
+    """
+    total = getattr(image, "n_frames", 1)
+
+    if total > ANIMATED_MAX_FRAMES:
+        # sample evenly across the whole loop so a slow animation's ending
+        # isn't the only thing that gets cut
+        wanted = {
+            round(i * (total - 1) / (ANIMATED_MAX_FRAMES - 1))
+            for i in range(ANIMATED_MAX_FRAMES)
+        }
+    else:
+        wanted = set(range(total))
+
+    parts = []
+    for index, frame in enumerate(ImageSequence.Iterator(image)):
+        if index in wanted:
+            parts.append(_encode_frame(frame))
+        if len(parts) == len(wanted):
+            break
+    return parts, total
+
+
 def _fetch_image_parts(urls):
-    """Download image URLs into inline Parts the model can see."""
+    """Download image URLs into inline Parts the model can see.
+
+    Anything Pillow can open goes through, which covers AVIF and animated
+    GIF/WebP that Discord hands us and Gemini can't read directly.
+    """
     parts = []
     for url in (urls or [])[:MAX_IMAGES]:
         try:
@@ -355,7 +449,34 @@ def _fetch_image_parts(urls):
             if len(resp.content) > MAX_IMAGE_BYTES:
                 _log(f"[llm] image too big ({len(resp.content)}B): {_preview(url, 80)}")
                 continue
-            parts.append(types.Part.from_bytes(data=resp.content, mime_type=mime))
+
+            image = Image.open(io.BytesIO(resp.content))
+            if getattr(image, "n_frames", 1) > 1:
+                frames, total = _animated_parts(image)
+                if len(parts) + len(frames) + 1 > MAX_IMAGE_PARTS:
+                    _log(
+                        f"[llm] skipping animation, part budget full: {_preview(url, 80)}"
+                    )
+                    continue
+                _log(f"[llm] animation: {len(frames)} of {total} frames from {mime}")
+                # label the frames, otherwise the model has no way to know
+                # they're one moving image rather than several separate ones
+                parts.append(
+                    types.Part(
+                        text=f"[the next {len(frames)} images are frames of one "
+                        "animation, in order]"
+                    )
+                )
+                parts.extend(frames)
+                continue
+
+            if mime in PASSTHROUGH_IMAGE_MIMES:
+                # Gemini reads these natively; sending the original bytes
+                # avoids a pointless and sometimes size-quadrupling re-encode
+                parts.append(types.Part.from_bytes(data=resp.content, mime_type=mime))
+            else:
+                _log(f"[llm] transcoding {mime}: {_preview(url, 80)}")
+                parts.append(_encode_frame(image))
         except Exception as e:
             _log(f"[llm] couldn't fetch image {_preview(url, 80)}: {e}")
     return parts
