@@ -147,6 +147,14 @@ def get_server_status(server: str) -> str:
     )
 
 
+def _duration(hours) -> str:
+    """Decimal hours -> the compact '7h 30m' way a person says it."""
+    total = round(hours * 60)
+    if total < 60:
+        return f"{total}m"
+    return f"{total // 60}h {total % 60}m"
+
+
 def get_health_status() -> str:
     """Get alex's recent weight and sleep tracking (from his smartwatch), to
     answer questions about his weight, sleep, or naps."""
@@ -156,10 +164,6 @@ def get_health_status() -> str:
         return f"couldn't reach health data right now: {e}"
     if "error" in data:
         return f"no health data available: {data['error']}"
-
-    def _hm(hours):
-        total = round(hours * 60)
-        return f"{total // 60}h {total % 60}m"
 
     def _format_day(day):
         parts = [day["date"]]
@@ -172,7 +176,7 @@ def get_health_status() -> str:
             if stages:
                 parts.append(
                     "stages: "
-                    + ", ".join(f"{name} {_hm(h)}" for name, h in stages.items())
+                    + ", ".join(f"{name} {_duration(h)}" for name, h in stages.items())
                 )
         if "naps" in day:
             nap_hours = sum(n["hours"] for n in day["naps"].values())
@@ -181,6 +185,79 @@ def get_health_status() -> str:
 
     days = [data["current"]] + data.get("previous", [])[:6]
     return "; ".join(_format_day(day) for day in days)
+
+
+def get_activity(when: str = "today") -> str:
+    """Get what alex has actually been using his computer for — his screen time
+    per app, per category and per hour. Use this for anything about what he's
+    been doing, what he played or watched or drew, how long he's spent on
+    something, when he was online or when he went to bed, or comparing today
+    to yesterday.
+
+    Args:
+        when: "today" for the day so far, or "yesterday" for the full previous
+            day. Days start at 4am, so "yesterday" covers 4am yesterday to 4am
+            this morning.
+    """
+    when = (when or "").strip().lower()
+    if when not in ("today", "yesterday"):
+        return "when has to be either 'today' or 'yesterday'"
+
+    url = "https://status.boysare.moe/activity"
+    if when == "yesterday":
+        url += "/yesterday"
+    try:
+        data = requests.get(url, timeout=5).json()
+    except Exception as e:
+        return f"couldn't reach activity data right now: {e}"
+
+    totals = data.get("totals", {})
+    start = datetime.fromisoformat(data["day_start"])
+    day = (
+        f"{data['date']}, {start.strftime('%H:%M')} to "
+        f"{datetime.fromisoformat(data['day_end']).strftime('%H:%M')} the next day"
+    )
+    if data.get("partial"):
+        day += ", still in progress so it will only go up"
+
+    lines = [
+        f"{day}: {totals['app_switches']} app switches across "
+        f"{totals['distinct_apps']} apps. "
+        f"{_duration(totals['active_seconds'] / 3600)} actually at the computer, "
+        f"{_duration(totals['afk_seconds'] / 3600)} idle at it, "
+        f"{_duration(totals['tracked_seconds'] / 3600)} tracked in total."
+    ]
+
+    def _h(seconds):
+        return _duration(seconds / 3600)
+
+    apps = [
+        f"{a.get('name') or a['app']} {_h(a['active_seconds'])}"
+        for a in data.get("apps", [])
+        if a["active_seconds"] >= 30
+    ]
+    if apps:
+        lines.append("Apps: " + ", ".join(apps))
+
+    cats = [
+        f"{c['category'].replace('>', '/')} {_h(c['active_seconds'])}"
+        for c in data.get("categories", [])
+        if c["active_seconds"] >= 30
+    ]
+    if cats:
+        lines.append("Categories: " + ", ".join(cats))
+
+    # The hour buckets are counted from the day's 4am start, not midnight, so
+    # shift them back onto the wall clock or "what time was I up" comes out wrong
+    hours = [
+        f"{(start.hour + h['hour']) % 24:02d}:00 {_h(h['active_seconds'])}"
+        for h in data.get("hours", [])
+        if h["active_seconds"] >= 60 or h["afk_seconds"] >= 60
+    ]
+    if hours:
+        lines.append("Hour by hour: " + ", ".join(hours))
+
+    return "\n".join(lines)
 
 
 def get_recent_tweets(count: int = 10) -> str:
@@ -316,7 +393,9 @@ def _system_instruction(is_dm=False, server_emojis=None):
         "You have tools to search the web, check the time anywhere else in "
         "the world, check live metrics for alex's home servers (basil, "
         "sunny and maeno), check alex's recent tweets, check alex's recent weight/sleep "
-        "tracking, pull up the actual recent message history in this "
+        "tracking, see what alex has actually been doing on his computer "
+        "today or yesterday (his screen time per app and per hour), "
+        "pull up the actual recent message history in this "
         "Discord channel, and find fan art on danbooru. Use the chat "
         "history one when asked to summarize the chat, catch someone up on "
         "what they missed, or recap what's been discussed, rather than "
@@ -338,7 +417,8 @@ def _system_instruction(is_dm=False, server_emojis=None):
         "the image; a short in-character line before it is fine. These are "
         "not optional extras: if a "
         "question is about any of those things — his weight, his sleep, a server's "
-        "status, what he's tweeted, or finding a picture/fan art — you MUST "
+        "status, what he's been doing on his computer, what he's tweeted, "
+        "or finding a picture/fan art — you MUST "
         "call the matching tool and answer from its actual result, every "
         "single time you're asked, even if you or someone else already said "
         "a number or URL for it earlier in this conversation — that earlier "
@@ -596,6 +676,7 @@ def generate_content_llm(
         get_server_status,
         get_recent_tweets,
         get_health_status,
+        get_activity,
         find_artwork,
         *(extra_tools or []),
     ]
