@@ -146,12 +146,13 @@ def make_judge_tool(user_id, name):
 
     def record_moe(quote: str, points: int, reason: str = "") -> str:
         """Award moe points to the person you're talking to, if what they just
-        said is moe, and tell them what they now have.
+        said is moe.
 
         Call this whenever the person says something that is moe by the
         definition below, and also when they ask what their score is. Pass
         points of 0 if it isn't moe and you just want to check their score
-        without changing it.
+        without changing it. This is a silent bookkeeping call: do not report
+        the score it returns to the user unless they explicitly asked for it.
 
         Args:
             quote: the thing they said (or part of it) that is moe.
